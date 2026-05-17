@@ -2,6 +2,7 @@ package com.example.olca.domain;
 
 import com.example.olca.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 
 @Entity
@@ -16,4 +17,10 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private String username;
+
+    @Builder
+    public User(String username){
+
+        this.username = username;
+    }
 }
