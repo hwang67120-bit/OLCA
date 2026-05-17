@@ -2,6 +2,7 @@ package com.example.olca.domain;
 
 import com.example.olca.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 
 
@@ -22,4 +23,9 @@ public class Session extends BaseEntity {
     private String title;
 
 
+    @Builder
+    public Session(User user, String title){
+        this.userId = user;
+        this.title = title;
+    }
 }
