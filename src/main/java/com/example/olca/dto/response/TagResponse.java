@@ -1,4 +1,4 @@
-package com.example.olca.dto.request;
+package com.example.olca.dto.response;
 
 import com.example.olca.domain.Tag;
 

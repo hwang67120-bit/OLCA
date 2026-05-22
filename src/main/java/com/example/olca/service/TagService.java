@@ -1,7 +1,7 @@
 package com.example.olca.service;
 
 import com.example.olca.domain.Tag;
-import com.example.olca.dto.request.TagResponse;
+import com.example.olca.dto.response.TagResponse;
 import com.example.olca.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package com.example.olca.controller;
 
 
-import com.example.olca.dto.request.TagResponse;
+import com.example.olca.dto.response.TagResponse;
 import com.example.olca.service.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
