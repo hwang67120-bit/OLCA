@@ -19,6 +19,7 @@ public class KnowledgeBase {
     private String topic;
     private String content;
     private List<String> keywords;
+    private Integer version;
 
     @CreatedDate
     private LocalDateTime createdAt;

@@ -41,7 +41,10 @@ public class SessionService {
 
 
     public List<SessionResponse> findByUserId(Long userId) {
-        return sessionRepository.findByUserId(userId).stream()
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return sessionRepository.findByUser(user).stream()
                 .map(SessionResponse::from)
                 .toList();
     }

@@ -16,8 +16,8 @@ public class Session extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
-    private User userId;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(nullable = false)
     private String title;
@@ -25,7 +25,8 @@ public class Session extends BaseEntity {
 
     @Builder
     public Session(User user, String title){
-        this.userId = user;
+        this.user = user;
         this.title = title;
     }
+    protected Session() {}
 }

@@ -13,7 +13,7 @@ public record SessionResponse(
     public static SessionResponse from(Session session) {
         return new SessionResponse(
                 session.getId(),
-                session.getUserId().getId(),
+                session.getUser().getId(),
                 session.getTitle(),
                 session.getCreatedAt()
         );

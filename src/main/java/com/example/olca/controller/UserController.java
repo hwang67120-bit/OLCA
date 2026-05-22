@@ -1,6 +1,5 @@
 package com.example.olca.controller;
 
-import com.example.olca.domain.User;
 import com.example.olca.dto.request.UserCreateRequest;
 import com.example.olca.dto.response.UserResponse;
 import com.example.olca.service.UserService;
@@ -17,7 +16,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserResponse> carete(@Valid @RequestBody UserCreateRequest request){
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request){
 
         UserResponse userResponse = userService.create(request);
         return ResponseEntity.ok(userResponse);

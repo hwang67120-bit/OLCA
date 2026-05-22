@@ -20,21 +20,20 @@ public class UserService {
     public UserResponse create(UserCreateRequest request){
 
         if(userRepository.existsByUsername(request.username())){
-            throw new RuntimeException("중복된 이름 입니다");
+            throw new RuntimeException("중복된 이름입니다");
         }
 
         User user = User.builder()
                 .username(request.username())
                 .build();
 
-        User sevedUser = userRepository.save(user);
-
-        return UserResponse.from(sevedUser);
+        User savedUser = userRepository.save(user);
+        return UserResponse.from(savedUser);
     }
 
     public UserResponse findById(Long id){
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("사용자 이름을 찿을수 없습니다"));
+                .orElseThrow(() -> new RuntimeException("사용자 이름을 찿을 수 없습니다"));
 
         return UserResponse.from(user);
     }

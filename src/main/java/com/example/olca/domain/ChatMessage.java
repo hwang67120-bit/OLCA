@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Entity
-@Table(name = "chat_messag")
+@Table(name = "chat_message")
 @Getter
 public class ChatMessage extends BaseEntity {
 
@@ -15,7 +15,7 @@ public class ChatMessage extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "session_Id")
+    @JoinColumn(name = "e")
     private Session session;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -30,4 +30,5 @@ public class ChatMessage extends BaseEntity {
         this.question = question;
         this.answer = answer;
     }
+    protected ChatMessage() {}
 }

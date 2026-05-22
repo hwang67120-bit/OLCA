@@ -9,7 +9,7 @@ public record ChatMessageResponse(
         Long sessionId,
         String question,
         String answer,
-        LocalDateTime crreatedAt
+        LocalDateTime createdAt
 ) {
     public static ChatMessageResponse from(ChatMessage message){
         return new ChatMessageResponse(

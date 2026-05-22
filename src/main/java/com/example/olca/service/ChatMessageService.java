@@ -21,6 +21,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final SessionRepository sessionRepository;
 
+    @Transactional
     public ChatMessageResponse create(ChatMessgeCreateRequset requset){
 
         Session session = sessionRepository.findById(requset.sessionId())
@@ -33,7 +34,7 @@ public class ChatMessageService {
                 .build();
 
         ChatMessage saved = chatMessageRepository.save(message);
-        return ChatMessageResponse.from(message);
+        return ChatMessageResponse.from(saved);
     }
     public ChatMessageResponse findById(Long id) {
         ChatMessage message = chatMessageRepository.findById(id)
