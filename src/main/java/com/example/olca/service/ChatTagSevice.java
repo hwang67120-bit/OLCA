@@ -18,15 +18,16 @@ public class ChatTagSevice {
     private final ChatTagRepository chatTagRepository;
 
     @Transactional
-    public void ilnk(ChatMessage chatMessage, Tag tag){
+    public void ilnk(ChatMessage chatMessage, Tag tag) {
         ChatTag chatTag = ChatTag.builder()
                 .chatMessage(chatMessage)
                 .tag(tag)
                 .build();
         chatTagRepository.save(chatTag);
     }
+
     @Transactional
-    public void linkMultiple(ChatMessage chatMessag, List<Tag> tags){
+    public void linkMultiple(ChatMessage chatMessag, List<Tag> tags) {
         for (Tag tag : tags) {
             ChatTag chatTag = ChatTag.builder()
                     .chatMessage(chatMessag)
@@ -36,11 +37,12 @@ public class ChatTagSevice {
         }
     }
 
-    public List<ChatMessage> findChatMessagesByTag(Tag tag){
+    public List<ChatMessage> findChatMessagesByTag(Tag tag) {
         return chatTagRepository.findChatMessagesByTag(tag);
     }
+
     @Transactional
-    public void deletByMessage(ChatMessage chatMessage){
+    public void deletByMessage(ChatMessage chatMessage) {
         chatTagRepository.deleteByChatMessage(chatMessage);
     }
 }

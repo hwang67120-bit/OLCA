@@ -1,7 +1,6 @@
 package com.example.olca.controller;
 
 
-
 import com.example.olca.dto.response.KnowledgeBaseResponse;
 import com.example.olca.service.KnowledgeBaseService;
 import lombok.RequiredArgsConstructor;

@@ -17,9 +17,9 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public UserResponse create(UserCreateRequest request){
+    public UserResponse create(UserCreateRequest request) {
 
-        if(userRepository.existsByUsername(request.username())){
+        if (userRepository.existsByUsername(request.username())) {
             throw new RuntimeException("중복된 이름입니다");
         }
 
@@ -31,13 +31,12 @@ public class UserService {
         return UserResponse.from(savedUser);
     }
 
-    public UserResponse findById(Long id){
+    public UserResponse findById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("사용자 이름을 찿을 수 없습니다"));
 
         return UserResponse.from(user);
     }
-
 
 
 }

@@ -34,21 +34,23 @@ public class TagService {
 
         return TagResponse.from(tag);
     }
+
     public TagResponse findByName(String name) {
         Tag tag = tagRepository.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("태그을 찿을 없습니다 "));
         return TagResponse.from(tag);
     }
-    public List<TagResponse> getTopTag(int limit){
+
+    public List<TagResponse> getTopTag(int limit) {
         List<Tag> tags = tagRepository.findTopTags(limit);
         List<TagResponse> responses = new ArrayList<>();
-        for (Tag tag : tags){
+        for (Tag tag : tags) {
             responses.add(TagResponse.from(tag));
         }
         return responses;
     }
 
-    public List<TagResponse> findAll(){
+    public List<TagResponse> findAll() {
         List<Tag> tags = tagRepository.findAll();
         List<TagResponse> responses = new ArrayList<>();
         for (Tag tag : tags) {

@@ -22,7 +22,7 @@ public class ChatMessageService {
     private final SessionRepository sessionRepository;
 
     @Transactional
-    public ChatMessageResponse create(ChatMessgeCreateRequset requset){
+    public ChatMessageResponse create(ChatMessgeCreateRequset requset) {
 
         Session session = sessionRepository.findById(requset.sessionId())
                 .orElseThrow(() -> new IllegalArgumentException("섹션을 찿을수 없습니다"));
@@ -36,6 +36,7 @@ public class ChatMessageService {
         ChatMessage saved = chatMessageRepository.save(message);
         return ChatMessageResponse.from(saved);
     }
+
     public ChatMessageResponse findById(Long id) {
         ChatMessage message = chatMessageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다"));

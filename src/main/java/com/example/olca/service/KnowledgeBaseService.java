@@ -1,7 +1,6 @@
 package com.example.olca.service;
 
 import com.example.olca.domain.KnowledgeBase;
-
 import com.example.olca.dto.response.KnowledgeBaseResponse;
 import com.example.olca.repository.KnowledgeBaseRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 
 import java.util.List;
 
@@ -47,21 +45,23 @@ public class KnowledgeBaseService {
                 )
                 .map(KnowledgeBaseResponse::from);
     }
-    public Flux<KnowledgeBaseResponse> textSearch(String searchTxet){
+
+    public Flux<KnowledgeBaseResponse> textSearch(String searchTxet) {
         return knowledgeBaseRepository.textSearch(searchTxet)
                 .map(KnowledgeBaseResponse::from);
     }
+
     public Flux<KnowledgeBaseResponse> searchByKeywords(List<String> keywords) {
         return knowledgeBaseRepository.searchByKeywords(keywords)
                 .map(KnowledgeBaseResponse::from);
     }
 
-    public Mono<KnowledgeBaseResponse> findLatestByTopic(String topic){
+    public Mono<KnowledgeBaseResponse> findLatestByTopic(String topic) {
         return knowledgeBaseRepository.findLatestByTopic(topic)
                 .map(KnowledgeBaseResponse::from);
     }
 
-   public Flux<KnowledgeBaseResponse> findAll() {
+    public Flux<KnowledgeBaseResponse> findAll() {
         return knowledgeBaseRepository.findAll()
                 .map(KnowledgeBaseResponse::from);
     }

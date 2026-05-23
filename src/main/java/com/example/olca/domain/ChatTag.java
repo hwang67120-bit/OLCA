@@ -27,5 +27,6 @@ public class ChatTag {
         this.tag = tag;
     }
 
-    protected ChatTag() {}
+    protected ChatTag() {
+    }
 }

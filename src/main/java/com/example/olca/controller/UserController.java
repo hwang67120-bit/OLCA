@@ -16,14 +16,14 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request){
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
 
         UserResponse userResponse = userService.create(request);
         return ResponseEntity.ok(userResponse);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> findById(@PathVariable Long id){
+    public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
 
         UserResponse response = userService.findById(id);
         return ResponseEntity.ok(response);
