@@ -23,7 +23,7 @@ public class VTuberWebSocketClient {
         responseFuture = new CompletableFuture<>();
 
         try {
-            URI uri = new URI("ws://192.168.0.6:12393/client-ws");
+         
 
             client = new WebSocketClient(uri) {
                 @Override
