@@ -28,7 +28,7 @@ public class ChatMessageService {
                 .orElseThrow(() -> new IllegalArgumentException("섹션을 찿을수 없습니다"));
 
         ChatMessage message = ChatMessage.builder()
-                .session(session)
+                .sessionId(session)
                 .question(requset.question())
                 .answer(requset.answer())
                 .build();
@@ -47,7 +47,7 @@ public class ChatMessageService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다"));
 
-        List<ChatMessage> messages = chatMessageRepository.findBySession(session);
+        List<ChatMessage> messages = chatMessageRepository.findBySessionId(session);
 
         List<ChatMessageResponse> responses = new ArrayList<>();
         for (ChatMessage message : messages) {

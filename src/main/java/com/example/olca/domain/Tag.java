@@ -6,7 +6,12 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Entity
-@Table(name = "tag")
+@Table(
+        name = "tag",
+        indexes = {
+                @Index(name = "idx_tag_name", columnList = "name")
+        }
+)
 @Getter
 public class Tag extends BaseEntity {
 

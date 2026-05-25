@@ -14,7 +14,7 @@ public record ChatMessageResponse(
     public static ChatMessageResponse from(ChatMessage message){
         return new ChatMessageResponse(
                 message.getId(),
-                message.getSession().getId(),
+                message.getSessionId().getId(),
                 message.getQuestion(),
                 message.getAnswer(),
                 message.getCreatedAt()

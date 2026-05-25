@@ -3,6 +3,7 @@ package com.example.olca.common;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
@@ -16,6 +17,10 @@ import java.util.concurrent.CompletableFuture;
 public class VTuberWebSocketClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${vtuber.websocket.url}")
+    private String websocketUrl;
+
     private WebSocketClient client;
     private CompletableFuture<String> responseFuture;
 
@@ -23,15 +28,16 @@ public class VTuberWebSocketClient {
         responseFuture = new CompletableFuture<>();
 
         try {
-            URI uri = new URI("ws://192.168.0.6:12393/client-ws");
+            URI uri = new URI(websocketUrl);
 
             client = new WebSocketClient(uri) {
+
                 @Override
                 public void onOpen(ServerHandshake serverHandshake) {
                     log.info("WebSocket 연결 성공");
 
                     try {
-                        // ✅ 수정: text-input으로 변경
+
                         Map<String, Object> payload = Map.of(
                                 "type", "text-input",
                                 "text", message
@@ -60,15 +66,44 @@ public class VTuberWebSocketClient {
                         // 무시할 메시지
                         if ("group-update".equals(type) ||
                                 "set-model-and-conf".equals(type) ||
-                                "control".equals(type)) {
+                                "control".equals(type)) {  // ← audio 제거!
                             log.info("시스템 메시지 무시: {}", type);
+                            return;
+                        }
+
+                        // ✅ audio 타입 처리 추가
+                        if ("audio".equals(type)) {
+                            Map<String, Object> displayText = (Map<String, Object>) response.get("display_text");
+                            if (displayText != null) {
+                                String text = (String) displayText.get("text");
+                                log.info("Audio 텍스트: {}", text);
+                                if (text != null && !text.startsWith("[")) {
+                                    responseFuture.complete(text);
+                                    close();
+                                    return;
+                                }
+                            }
+                            return;
+                        }
+
+                        if("backend-synth-complete".equals(type)) {
+                            log.info("TTS 완료, 응답 종료");
+                            if (!responseFuture.isDone()){
+                                responseFuture.complete("응답 완료");
+                            }
+
+                            close();
                             return;
                         }
 
                         // AI 응답
                         if ("full-text".equals(type) || "ai-response".equals(type)) {
                             String text = (String) response.get("text");
-                            if (text != null && !text.equals("Connection established")) {
+                            if (text != null &&
+                                    !text.equals("Connection established") &&
+                                    !text.equals("Thinking...") &&
+                                    !text.startsWith("Thinking")) {
+
                                 log.info("AI 응답: {}", text);
                                 responseFuture.complete(text);
                                 close();
@@ -79,7 +114,11 @@ public class VTuberWebSocketClient {
                         // text 필드가 있으면 사용
                         if (response.containsKey("text")) {
                             String text = (String) response.get("text");
-                            if (text != null && !text.equals("Connection established")) {
+                            if (text != null &&
+                                    !text.equals("Connection established") &&
+                                    !text.equals("Thinking...") &&
+                                    !text.startsWith("Thinking")) {
+
                                 responseFuture.complete(text);
                                 close();
                             }
@@ -91,7 +130,6 @@ public class VTuberWebSocketClient {
                         close();
                     }
                 }
-
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
                     log.info("WebSocket 연결 종료: {}", reason);

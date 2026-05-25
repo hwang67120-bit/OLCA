@@ -1,6 +1,8 @@
 package com.example.olca.service;
 
+import com.example.olca.common.VTuberWebSocketClient;
 import com.example.olca.domain.ChatFlow;
+import com.example.olca.domain.ChatMessage;
 import com.example.olca.repository.ChatFlowRepository;
 import com.example.olca.repository.ChatMessageRepository;
 import com.example.olca.repository.ChatTagRepository;
@@ -8,6 +10,7 @@ import com.example.olca.repository.KnowledgeBaseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -19,6 +22,7 @@ public class ChatFlowService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatTagRepository chatTagRepository;
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final VTuberWebSocketClient vtuberClient;
 
     // 메인 처리 파이프라인
     public Mono<String> process(String question, Long userId, Long sessionId) {
@@ -68,14 +72,46 @@ public class ChatFlowService {
 
     // 검증 1: 과거 대화 검증
     private Mono<List<Long>> validatePastMessages(Long userId, Long sessionId) {
-        // TODO: ChatMessage 조회 로직 (내일 Python 연결 시 구현)
-        return Mono.just(List.of());
+        return Mono.fromCallable(() ->
+                chatMessageRepository.findRecent(userId, sessionId, 10)
+                        .stream()
+                        .map(ChatMessage::getId)
+                        .toList()
+        ).subscribeOn(Schedulers.boundedElastic());
     }
+
 
     // 검증 2: 태그 검증
     private Mono<List<Long>> validateTags(String question) {
-        // TODO: Tag 패턴 검색 로직 (내일 Python 연결 시 구현)
-        return Mono.just(List.of());
+        return Mono.<List<Long>>fromCallable(() -> {
+            List<String> keywords = extractKeywords(question);
+            // 키워드 추출
+
+            if (keywords.isEmpty()) {
+                return List.of();
+            }
+
+            return chatTagRepository.findByTagNames(keywords)
+                    .stream()
+                    .map(chatTag -> chatTag.getTag().getId())
+                    .distinct()
+                    .toList();
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    // 키워드 추출 (불용어 제거)
+    private List<String> extractKeywords(String question) {
+        // 불용어 목록
+        List<String> stopWords = List.of(
+                "은", "는", "이", "가", "을", "를", "에", "의", "와", "과",
+                "도", "만", "라", "이랑", "하고", "어", "아", "요"
+        );
+
+        return List.of(question.split("\\s+"))
+                .stream()
+                .filter(word -> word.length() > 1)  // 1글자 제거
+                .filter(word -> !stopWords.contains(word))  // 불용어 제거
+                .toList();
     }
 
     // 검증 3: 지식 검증
@@ -88,7 +124,8 @@ public class ChatFlowService {
     // 처리 1-3: 답변 생성 (추론은 메모리에서만)
     private Mono<String> generateAnswer(String question, List<Long> messageIds,
                                         List<Long> tagIds, List<String> knowledgeIds) {
-        // TODO: Ollama AI 호출 (내일 Python 연결 시 구현)
-        return Mono.just("임시 답변: " + question);
+        return vtuberClient.sendMessage(question);
     }
+
+
 }

@@ -37,8 +37,12 @@ public class ChatTagSevice {
         }
     }
 
-    public List<ChatMessage> findChatMessagesByTag(Tag tag) {
-        return chatTagRepository.findChatMessagesByTag(tag);
+    public List<ChatMessage> findByTag(Tag tag) {
+        return chatTagRepository.findByTag(tag)
+                .stream()
+                .map(ChatTag::getChatMessage)
+                .distinct()
+                .toList();
     }
 
     @Transactional

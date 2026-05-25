@@ -11,5 +11,9 @@ spring:
     console:
       enabled: true
 
+vtuber:
+  websocket:
+    url: ws://192.168.0.6:12393/client-ws
+
 server:
   port: 8080

@@ -5,7 +5,13 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Entity
-@Table(name = "chat_tag")
+@Table(
+        name = "chat_tag",
+        indexes = {
+                @Index(name = "idx_chat_message", columnList = "chat_message_id"),
+                @Index(name = "idx_tag", columnList = "tag_id")
+        }
+)
 @Getter
 public class ChatTag {
 

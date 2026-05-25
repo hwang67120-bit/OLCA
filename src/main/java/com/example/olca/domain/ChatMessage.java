@@ -6,7 +6,11 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Entity
-@Table(name = "chat_message")
+@Table(name = "chat_message",
+indexes = {
+        @Index(name = "idx_session", columnList = "session_id"),
+        @Index(name = "idx_created", columnList = "createdAt")
+})
 @Getter
 public class ChatMessage extends BaseEntity {
 
@@ -15,8 +19,8 @@ public class ChatMessage extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "e")
-    private Session session;
+    @JoinColumn(name = "session_id")
+    private Session sessionId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String question;
@@ -25,8 +29,8 @@ public class ChatMessage extends BaseEntity {
     private String answer;
 
     @Builder
-    public ChatMessage(Session session, String question, String answer) {
-        this.session = session;
+    public ChatMessage(Session sessionId, String question, String answer) {
+        this.sessionId = sessionId;
         this.question = question;
         this.answer = answer;
     }
