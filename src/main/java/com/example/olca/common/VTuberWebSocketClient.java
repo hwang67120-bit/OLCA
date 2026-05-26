@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -30,8 +31,10 @@ public class VTuberWebSocketClient {
 
         try {
             URI uri = new URI(websocketUrl);
+            log.info("🔌 WebSocket 연결 시도: {}", uri);
 
             client = new WebSocketClient(uri) {
+
                 @Override
                 public void onOpen(ServerHandshake serverHandshake) {
                     handler.handleOpen(this, message);
@@ -53,8 +56,11 @@ public class VTuberWebSocketClient {
                 }
             };
 
+            client.setConnectionLostTimeout(120);
             client.connect();
-            return Mono.fromFuture(responseFuture);
+
+            return Mono.fromFuture(responseFuture)
+                    .timeout(Duration.ofSeconds(120));
 
         } catch (Exception e) {
             log.error("WebSocket 연결 실패", e);
