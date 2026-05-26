@@ -13,7 +13,7 @@ spring:
 
 vtuber:
   websocket:
-    url: ws://192.168.0.6:12393/client-ws
+    url: ws://localhost:12393/client-ws
 
 server:
   port: 8080

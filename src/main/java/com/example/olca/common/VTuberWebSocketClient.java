@@ -1,5 +1,6 @@
 package com.example.olca.common;
 
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -19,11 +20,14 @@ public class VTuberWebSocketClient {
     private WebSocketClient client;
     private CompletableFuture<String> responseFuture;
 
+    @Value("${vtuber.websocket.url}")
+    private String websocketUrl;
+
     public Mono<String> sendMessage(String message) {
         responseFuture = new CompletableFuture<>();
 
         try {
-            URI uri = new URI("ws://192.168.0.6:12393/client-ws");
+            URI uri = new URI(websocketUrl);
 
             client = new WebSocketClient(uri) {
                 @Override
@@ -31,7 +35,7 @@ public class VTuberWebSocketClient {
                     log.info("WebSocket 연결 성공");
 
                     try {
-                        // ✅ 수정: text-input으로 변경
+
                         Map<String, Object> payload = Map.of(
                                 "type", "text-input",
                                 "text", message
