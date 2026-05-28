@@ -66,4 +66,40 @@ public class VTuberWebSocketClient {
             return Mono.error(e);
         }
     }
+    public Mono<String> sendTtsOnly(String text) {
+        responseFuture = new CompletableFuture<>();
+        WebSocketMessageHandler handler = new WebSocketMessageHandler(objectMapper, responseFuture);
+
+        try {
+            URI uri = new URI(websocketUrl);
+            client = new WebSocketClient(uri) {
+                @Override
+                public void onOpen(ServerHandshake serverHandshake) {
+                    handler.handleOpenTts(this, text);
+                }
+
+                @Override
+                public void onMessage(String msg) {
+                    handler.handleMessage(msg, this);
+                }
+
+                @Override
+                public void onClose(int code, String reason, boolean remote) {
+                    handler.handleClose(reason);
+                }
+
+                @Override
+                public void onError(Exception ex) {
+                    handler.handleError(ex);
+                }
+            };
+            client.setConnectionLostTimeout(120);
+            client.connect();
+
+            return Mono.fromFuture(responseFuture)
+                    .timeout(Duration.ofSeconds(120));
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+    }
 }
