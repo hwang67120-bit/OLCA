@@ -13,7 +13,7 @@ public class WebSocketMessageHandler {
 
     private final ObjectMapper objectMapper;
     private final CompletableFuture<String> responseFuture;
-    private final StringBuilder fullResponse = new StringBuilder();  // ✅ 응답 누적
+    private final StringBuilder fullResponse = new StringBuilder();
 
     public WebSocketMessageHandler(ObjectMapper objectMapper, CompletableFuture<String> responseFuture) {
         this.objectMapper = objectMapper;
@@ -84,5 +84,22 @@ public class WebSocketMessageHandler {
 
     public void handleClose(String reason) {
         log.info("🔌 WebSocket 연결 종료: {}", reason);
+    }
+
+    public void handleOpenTts(WebSocketClient client, String text) {
+        log.info("✅ TTS WebSocket 연결 성공");
+
+        try {
+            Map<String, Object> payload = Map.of(
+                    "type", "tts-only",
+                    "text", text
+            );
+            String jsonMessage = objectMapper.writeValueAsString(payload);
+            log.info("📤 TTS 전송: {}", jsonMessage);
+            client.send(jsonMessage);
+        } catch (Exception e) {
+            log.error("❌ TTS 전송 실패", e);
+            responseFuture.completeExceptionally(e);
+        }
     }
 }

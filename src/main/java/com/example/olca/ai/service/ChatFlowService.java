@@ -1,13 +1,19 @@
 package com.example.olca.ai.service;
 
-import com.example.olca.ai.websocket.VTuberWebSocketClient;
 import com.example.olca.ai.domain.ChatFlow;
-import com.example.olca.chat.domain.ChatMessage;
 import com.example.olca.ai.dto.Chatstsettings;
+import com.example.olca.ai.dto.PromptContext;
+import com.example.olca.ai.promptBuilder.PromptBuilder;
 import com.example.olca.ai.repository.ChatFlowRepository;
+import com.example.olca.ai.websocket.VTuberWebSocketClient;
+import com.example.olca.chat.domain.ChatMessage;
 import com.example.olca.chat.repository.ChatMessageRepository;
 import com.example.olca.chat.repository.ChatTagRepository;
+import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
+import com.example.olca.knowledge.service.KnowledgeBaseService;
+import com.example.olca.tag.domain.Tag;
+import com.example.olca.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -25,8 +31,13 @@ public class ChatFlowService {
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final VTuberWebSocketClient vtuberClient;
 
+    private final KnowledgeBaseService knowledgeBaseService;
+    private final OllamaService ollamaService;
+    private final PromptBuilder promptBuilder;
+
     private final Chatstsettings settings;
     private final List<String> stopWords;
+    private final TagRepository tagRepository;
 
     // 메인 처리 파이프라인
     public Mono<String> process(String question, Long userId, Long sessionId) {
@@ -113,9 +124,41 @@ public class ChatFlowService {
                 .collectList();
     }
 
-    // 답변 생성
     private Mono<String> generateAnswer(String question, List<Long> messageIds,
                                         List<Long> tagIds, List<String> knowledgeIds) {
-        return vtuberClient.sendMessage(question);
+        return knowledgeBaseService.vectorSearch(question, 3)
+                .flatMap(knowledgeDocs -> {
+                    List<ChatMessage> messages = messageIds.isEmpty() ? List.of()
+                            : chatMessageRepository.findAllById(messageIds);
+
+                    List<Tag> tags = tagIds.isEmpty() ? List.of()
+                            : tagRepository.findAllById(tagIds);
+
+                    String systemPrompt = promptBuilder.buildSystemPrompt();
+                    String userPrompt = promptBuilder.buildUserPrompt(
+                            new PromptContext(question, messages, tags, knowledgeDocs)
+                    );
+
+                    return Mono.fromCallable(() ->
+                            ollamaService.chat(systemPrompt, userPrompt)
+                    ).subscribeOn(Schedulers.boundedElastic());
+                });
+    }
+
+    private Mono<List<ChatMessage>> fetchMessages(List<Long> ids) {
+        if (ids.isEmpty()) return Mono.just(List.of());
+        return Mono.fromCallable(() -> chatMessageRepository.findAllById(ids))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Mono<List<Tag>> fetchTags(List<Long> ids) {
+        if (ids.isEmpty()) return Mono.just(List.of());
+        return Mono.fromCallable(() -> tagRepository.findAllById(ids))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Mono<List<KnowledgeBase>> fetchKnowledge(List<String> ids) {
+        if (ids.isEmpty()) return Mono.just(List.of());
+        return knowledgeBaseRepository.findAllById(ids).collectList();
     }
 }

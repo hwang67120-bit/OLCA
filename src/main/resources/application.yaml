@@ -16,7 +16,9 @@ spring:
       chat:
         options:
           model: ${OLLAMA_MODEL}
-          temperature: 0.7
+          temperature: 0.3
+      embedding:
+          model: nomic-embed-text
 
 vtuber:
   websocket:
