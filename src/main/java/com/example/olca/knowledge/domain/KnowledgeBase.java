@@ -25,16 +25,19 @@ public class KnowledgeBase {
 
     private List<String> keywords;
 
+    private List<Double> embedding;
+
     private Integer version;
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @Builder
-    public KnowledgeBase(String topic, String content, List<String> keywords, Integer version) {
+    public KnowledgeBase(String topic, String content, List<String> keywords, List<Double> embedding, Integer version) {
         this.topic = topic;
         this.content = content;
         this.keywords = keywords;
+        this.embedding = embedding;
         this.version = version != null ? version : 1;
     }
 }
