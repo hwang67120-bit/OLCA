@@ -1,8 +1,14 @@
 package com.example.olca.knowledge.controller;
 
 
-import com.example.olca.session.dto.response.KnowledgeBaseResponse;
+import com.example.olca.knowledge.dto.request.KnowledgeBaseSaveRequest;
+import com.example.olca.knowledge.dto.request.KnowledgeImportRequest;
+import com.example.olca.knowledge.dto.response.KnowledgeImportResponse;
+import com.example.olca.knowledge.dto.response.KnowledgeVectorSearchResponse;
 import com.example.olca.knowledge.service.KnowledgeBaseService;
+import com.example.olca.knowledge.service.KnowledgeImportService;
+import com.example.olca.session.dto.response.KnowledgeBaseResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -16,6 +22,7 @@ import java.util.List;
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
+    private final KnowledgeImportService knowledgeImportService;
 
     // 전체 조회
     @GetMapping
@@ -39,5 +46,30 @@ public class KnowledgeBaseController {
     @GetMapping("/topic/{topic}")
     public Mono<KnowledgeBaseResponse> findLatestByTopic(@PathVariable String topic) {
         return knowledgeBaseService.findLatestByTopic(topic);
+    }
+
+    @PostMapping
+    public Mono<KnowledgeBaseResponse> save(@RequestBody KnowledgeBaseSaveRequest request) {
+
+        return knowledgeBaseService.saveWithEmbedding(
+                request.topic(),
+                request.content(),
+                request.keywords()
+        );
+    }
+
+    @GetMapping("/vector-search")
+    public Mono<List<KnowledgeVectorSearchResponse>> vectorSearch(
+            @RequestParam String question,
+            @RequestParam(defaultValue = "5") int topN
+    ) {
+        return knowledgeBaseService.vectorSearchWithScore(question, topN);
+    }
+
+    @PostMapping("/import-text")
+    public Mono<KnowledgeImportResponse> importText(
+            @Valid @RequestBody KnowledgeImportRequest request
+    ) {
+        return knowledgeImportService.importText(request);
     }
 }

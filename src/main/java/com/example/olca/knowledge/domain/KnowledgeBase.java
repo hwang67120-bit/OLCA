@@ -1,5 +1,6 @@
 package com.example.olca.knowledge.domain;
 
+import com.example.olca.session.dto.response.KnowledgeBaseResponse;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
@@ -39,5 +40,17 @@ public class KnowledgeBase {
         this.keywords = keywords;
         this.embedding = embedding;
         this.version = version != null ? version : 1;
+    }
+
+    public KnowledgeBaseResponse from(KnowledgeBase knowledgeBase) {
+        return new KnowledgeBaseResponse(
+                knowledgeBase.getId(),
+                knowledgeBase.getTopic(),
+                knowledgeBase.getContent(),
+                knowledgeBase.getKeywords(),
+                knowledgeBase.getVersion(),
+                knowledgeBase.getCreatedAt()
+
+        );
     }
 }

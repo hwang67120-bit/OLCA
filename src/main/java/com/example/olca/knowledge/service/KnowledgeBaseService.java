@@ -3,6 +3,7 @@ package com.example.olca.knowledge.service;
 
 import com.example.olca.ai.service.EmbeddingService;
 import com.example.olca.knowledge.domain.KnowledgeBase;
+import com.example.olca.knowledge.dto.response.KnowledgeVectorSearchResponse;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
 import com.example.olca.session.dto.response.KnowledgeBaseResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,7 +29,13 @@ public class KnowledgeBaseService {
 
     // ✅ 문서 저장 + 임베딩 자동 생성
     @Transactional
-    public Mono<KnowledgeBaseResponse> saveWithEmbedding(String topic, String content, List<String> keywords) {
+    public Mono<KnowledgeBaseResponse> saveWithEmbedding(
+            String topic,
+            String content,
+            List<String> keywords
+    ) {
+        List<String> safeKeywords = keywords == null ? List.of() : keywords;
+
         return Mono.fromCallable(() ->
                         embeddingService.embed(topic + " " + content)
                 )
@@ -37,7 +46,7 @@ public class KnowledgeBaseService {
                                     KnowledgeBase newVersion = KnowledgeBase.builder()
                                             .topic(topic)
                                             .content(content)
-                                            .keywords(keywords)
+                                            .keywords(safeKeywords)
                                             .embedding(embedding)
                                             .version(existing.getVersion() + 1)
                                             .build();
@@ -47,7 +56,7 @@ public class KnowledgeBaseService {
                                     KnowledgeBase newKb = KnowledgeBase.builder()
                                             .topic(topic)
                                             .content(content)
-                                            .keywords(keywords)
+                                            .keywords(safeKeywords)
                                             .embedding(embedding)
                                             .version(1)
                                             .build();
@@ -66,15 +75,25 @@ public class KnowledgeBaseService {
                 .flatMap(questionVector ->
                         knowledgeBaseRepository.findAll()
                                 .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
-                                .sort((a, b) -> Double.compare(
-                                        cosineSimilarity(b.getEmbedding(), questionVector),
-                                        cosineSimilarity(a.getEmbedding(), questionVector)
-                                ))
-                                .take(topN)
                                 .collectList()
+                                .map(all -> all.stream()
+                                        .collect(Collectors.toMap(
+                                                KnowledgeBase::getTopic,
+                                                Function.identity(),
+                                                (a, b) -> a.getVersion() >= b.getVersion() ? a : b
+                                        ))
+                                        .values()
+                                        .stream()
+                                        .sorted((a, b) -> Double.compare(
+                                                cosineSimilarity(b.getEmbedding(), questionVector),
+                                                cosineSimilarity(a.getEmbedding(), questionVector)
+                                        ))
+                                        .limit(topN)
+                                        .toList()
+                                )
                 )
                 .doOnSuccess(results ->
-                        log.info("🔍 벡터 검색 결과: {}건", results.size())
+                        log.info("벡터 검색 결과: {}건", results.size())
                 );
     }
 
@@ -120,6 +139,38 @@ public class KnowledgeBaseService {
                     return knowledgeBaseRepository.save(newKb);
                 }))
                 .map(KnowledgeBaseResponse::from);
+    }
+
+    public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
+        return Mono.fromCallable(() ->
+                        embeddingService.embed(question)
+                )
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(questionVector ->
+                        knowledgeBaseRepository.findAll()
+                                .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
+                                .collectList()
+                                .map(all -> all.stream()
+                                        .collect(Collectors.toMap(
+                                                KnowledgeBase::getTopic,
+                                                Function.identity(),
+                                                (a, b) -> a.getVersion() >= b.getVersion() ? a : b
+                                        ))
+                                        .values()
+                                        .stream()
+                                        .map(kb -> new KnowledgeVectorSearchResponse(
+                                                kb.getId(),
+                                                kb.getTopic(),
+                                                kb.getContent(),
+                                                kb.getKeywords(),
+                                                kb.getVersion(),
+                                                cosineSimilarity(kb.getEmbedding(), questionVector)
+                                        ))
+                                        .sorted((a, b) -> Double.compare(b.similarity(), a.similarity()))
+                                        .limit(topN)
+                                        .toList()
+                                )
+                );
     }
 
     public Flux<KnowledgeBaseResponse> textSearch(String searchText) {
