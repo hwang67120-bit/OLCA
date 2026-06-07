@@ -26,6 +26,7 @@ public class KnowledgeBaseService {
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final EmbeddingService embeddingService;
+    private final QueryExpansionService queryExpansionService;
 
     // ✅ 문서 저장 + 임베딩 자동 생성
     @Transactional
@@ -68,9 +69,11 @@ public class KnowledgeBaseService {
 
     // ✅ 벡터 유사도 검색
     public Mono<List<KnowledgeBase>> vectorSearch(String question, int topN) {
-        return Mono.fromCallable(() ->
-                        embeddingService.embed(question)
-                )
+        return Mono.fromCallable(() -> {
+                    String expandedQuestion = queryExpansionService.expand(question);
+                    log.info("검색 질문 확장: {}", expandedQuestion);
+                    return embeddingService.embed(expandedQuestion);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(questionVector ->
                         knowledgeBaseRepository.findAll()
@@ -142,9 +145,11 @@ public class KnowledgeBaseService {
     }
 
     public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
-        return Mono.fromCallable(() ->
-                        embeddingService.embed(question)
-                )
+        return Mono.fromCallable(() -> {
+                    String expandedQuestion = queryExpansionService.expand(question);
+                    log.info("검색 질문 확장: {}", expandedQuestion);
+                    return embeddingService.embed(expandedQuestion);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(questionVector ->
                         knowledgeBaseRepository.findAll()

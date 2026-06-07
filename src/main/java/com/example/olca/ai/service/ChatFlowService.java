@@ -12,6 +12,7 @@ import com.example.olca.chat.repository.ChatTagRepository;
 import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
 import com.example.olca.knowledge.service.KnowledgeBaseService;
+import com.example.olca.knowledge.service.KnowledgeDomainGuard;
 import com.example.olca.tag.domain.Tag;
 import com.example.olca.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class ChatFlowService {
     private final KnowledgeBaseService knowledgeBaseService;
     private final OllamaService ollamaService;
     private final PromptBuilder promptBuilder;
+    private final KnowledgeDomainGuard knowledgeDomainGuard;
 
     private final Chatstsettings settings;
     private final List<String> stopWords;
@@ -126,7 +128,12 @@ public class ChatFlowService {
 
     private Mono<String> generateAnswer(String question, List<Long> messageIds,
                                         List<Long> tagIds, List<String> knowledgeIds) {
-        return knowledgeBaseService.vectorSearch(question, 3)
+
+        Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeDomainGuard.isKnowledgeQusestion(question)
+                ? knowledgeBaseService.vectorSearch(question, 3)
+                : Mono.just(List.of());
+
+        return knowledgeDocsMono
                 .flatMap(knowledgeDocs -> {
                     List<ChatMessage> messages = messageIds.isEmpty() ? List.of()
                             : chatMessageRepository.findAllById(messageIds);

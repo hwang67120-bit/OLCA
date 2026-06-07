@@ -3,6 +3,7 @@ package com.example.olca.ai.controller;
 
 import com.example.olca.ai.dto.PromptContext;
 import com.example.olca.ai.promptBuilder.PromptBuilder;
+import com.example.olca.ai.service.ChatFlowService;
 import com.example.olca.ai.service.OllamaService;
 import com.example.olca.ai.websocket.VTuberWebSocketClient;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class TestController {
     private final VTuberWebSocketClient vtuberClient;
     private final OllamaService ollamaService;
     private final PromptBuilder promptBuilder;
+    private final ChatFlowService chatFlowService;
 
     @GetMapping("/websocket")
     public Mono<String> testWebSocket(@RequestParam String message) {
@@ -65,6 +67,11 @@ public class TestController {
         );
         return Mono.fromCallable(() -> ollamaService.chat(systemPrompt, userPrompt))
                 .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/rag")
+    public Mono<String> testRag(@RequestParam String message) {
+        return chatFlowService.process(message, 1L, 1L);
     }
 
 }
