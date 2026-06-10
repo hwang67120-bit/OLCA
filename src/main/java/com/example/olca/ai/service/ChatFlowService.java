@@ -9,6 +9,8 @@ import com.example.olca.ai.websocket.VTuberWebSocketClient;
 import com.example.olca.chat.domain.ChatMessage;
 import com.example.olca.chat.repository.ChatMessageRepository;
 import com.example.olca.chat.repository.ChatTagRepository;
+import com.example.olca.global.trace.TraceKeys;
+import com.example.olca.global.trace.TraceLog;
 import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
 import com.example.olca.knowledge.service.KnowledgeBaseService;
@@ -16,12 +18,15 @@ import com.example.olca.knowledge.service.KnowledgeDomainGuard;
 import com.example.olca.tag.domain.Tag;
 import com.example.olca.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatFlowService {
@@ -41,13 +46,30 @@ public class ChatFlowService {
     private final List<String> stopWords;
     private final TagRepository tagRepository;
 
-    // 메인 처리 파이프라인
+    @TraceLog("ChatFlowService.process")
     public Mono<String> process(String question, Long userId, Long sessionId) {
-        return chatFlowRepository.findCachedAnswer(question, userId)
-                .map(ChatFlow::getAnswer)
-                .switchIfEmpty(
-                        processNewQuestion(question, userId, sessionId)
-                );
+        String traceId = UUID.randomUUID().toString().substring(0, 8);
+        long start = System.currentTimeMillis();
+
+        return Mono.defer(() -> {
+                    log.info("[AI_TRACE_START] traceId={} userId={} sessionId={} questionLength={}",
+                            traceId, userId, sessionId, question == null ? 0 : question.length());
+
+                    return chatFlowRepository.findCachedAnswer(question, userId)
+                            .map(chatFlow -> {
+                                log.info("[AI_CACHE] traceId={} hit=true", traceId);
+                                return chatFlow.getAnswer();
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.info("[AI_CACHE] traceId={} hit=false", traceId);
+                                return processNewQuestion(question, userId, sessionId);
+                            }));
+                })
+                .doOnSuccess(answer -> log.info("[AI_TRACE_END] traceId={} totalMs={} success=true",
+                        traceId, System.currentTimeMillis() - start))
+                .doOnError(error -> log.warn("[AI_TRACE_END] traceId={} totalMs={} success=false error={}",
+                        traceId, System.currentTimeMillis() - start, error.getClass().getSimpleName()))
+                .contextWrite(context -> context.put(TraceKeys.TRACE_ID, traceId));
     }
 
     private Mono<String> processNewQuestion(String question, Long userId, Long sessionId) {
@@ -79,7 +101,6 @@ public class ChatFlowService {
                 });
     }
 
-
     private Mono<List<Long>> validatePastMessages(Long userId, Long sessionId) {
         return Mono.fromCallable(() ->
                 chatMessageRepository.findRecent(
@@ -93,7 +114,6 @@ public class ChatFlowService {
         ).subscribeOn(Schedulers.boundedElastic());
     }
 
-    // 검증 2: 태그
     private Mono<List<Long>> validateTags(String question) {
         return Mono.<List<Long>>fromCallable(() -> {
             List<String> keywords = extractKeywords(question);
@@ -110,7 +130,6 @@ public class ChatFlowService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    // 키워드 추출 (✅ stopWords 사용)
     private List<String> extractKeywords(String question) {
         return List.of(question.split("\\s+"))
                 .stream()
@@ -119,22 +138,30 @@ public class ChatFlowService {
                 .toList();
     }
 
-    // 검증 3: 지식
     private Mono<List<String>> validateKnowledge(String question) {
         return knowledgeBaseRepository.textSearch(question)
-                .map(kb -> kb.getId())
+                .map(KnowledgeBase::getId)
                 .collectList();
     }
 
     private Mono<String> generateAnswer(String question, List<Long> messageIds,
                                         List<Long> tagIds, List<String> knowledgeIds) {
 
-        Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeDomainGuard.isKnowledgeQusestion(question)
+        boolean knowledgeQuestion = knowledgeDomainGuard.isKnowledgeQusestion(question);
+        log.info("[AI_ROUTE] route={} reason={}",
+                knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
+                knowledgeQuestion ? "knowledge_intent" : "no_knowledge_intent");
+
+        Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeQuestion
                 ? knowledgeBaseService.vectorSearch(question, 3)
                 : Mono.just(List.of());
 
         return knowledgeDocsMono
                 .flatMap(knowledgeDocs -> {
+                    log.info("[AI_CONTEXT] route={} knowledgeCount={} messageCount={} tagCount={} textSearchCount={}",
+                            knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
+                            knowledgeDocs.size(), messageIds.size(), tagIds.size(), knowledgeIds.size());
+
                     List<ChatMessage> messages = messageIds.isEmpty() ? List.of()
                             : chatMessageRepository.findAllById(messageIds);
 

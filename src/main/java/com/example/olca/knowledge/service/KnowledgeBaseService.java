@@ -1,7 +1,7 @@
 package com.example.olca.knowledge.service;
 
-
 import com.example.olca.ai.service.EmbeddingService;
+import com.example.olca.global.trace.TraceLog;
 import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.dto.response.KnowledgeVectorSearchResponse;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
@@ -28,7 +28,6 @@ public class KnowledgeBaseService {
     private final EmbeddingService embeddingService;
     private final QueryExpansionService queryExpansionService;
 
-    // ✅ 문서 저장 + 임베딩 자동 생성
     @Transactional
     public Mono<KnowledgeBaseResponse> saveWithEmbedding(
             String topic,
@@ -67,11 +66,11 @@ public class KnowledgeBaseService {
                 .map(KnowledgeBaseResponse::from);
     }
 
-    // ✅ 벡터 유사도 검색
+    @TraceLog("KnowledgeBaseService.vectorSearch")
     public Mono<List<KnowledgeBase>> vectorSearch(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("검색 질문 확장: {}", expandedQuestion);
+                    log.info("[VECTOR_SEARCH] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -96,11 +95,12 @@ public class KnowledgeBaseService {
                                 )
                 )
                 .doOnSuccess(results ->
-                        log.info("벡터 검색 결과: {}건", results.size())
+                        log.info("[VECTOR_SEARCH] resultCount={} topics={}",
+                                results.size(),
+                                results.stream().map(KnowledgeBase::getTopic).toList())
                 );
     }
 
-    // ✅ 코사인 유사도 계산
     private double cosineSimilarity(List<Double> vectorA, List<Double> vectorB) {
         if (vectorA.size() != vectorB.size()) return 0.0;
 
@@ -119,7 +119,6 @@ public class KnowledgeBaseService {
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    // 기존 메서드들 유지
     @Transactional
     public Mono<KnowledgeBaseResponse> createOrUpdate(String topic, String content, List<String> keywords) {
         return knowledgeBaseRepository.findLatestByTopic(topic)
@@ -144,10 +143,11 @@ public class KnowledgeBaseService {
                 .map(KnowledgeBaseResponse::from);
     }
 
+    @TraceLog("KnowledgeBaseService.vectorSearchWithScore")
     public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("검색 질문 확장: {}", expandedQuestion);
+                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -175,6 +175,11 @@ public class KnowledgeBaseService {
                                         .limit(topN)
                                         .toList()
                                 )
+                )
+                .doOnSuccess(results ->
+                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={} topics={}",
+                                results.size(),
+                                results.stream().map(KnowledgeVectorSearchResponse::topic).toList())
                 );
     }
 

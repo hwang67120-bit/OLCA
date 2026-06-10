@@ -1,9 +1,11 @@
 package com.example.olca.ai.service;
 
+import com.example.olca.global.trace.TraceLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -12,21 +14,22 @@ public class EmbeddingService {
 
     private final EmbeddingModel embeddingModel;
 
-    public EmbeddingService(EmbeddingModel embeddingModel){
+    public EmbeddingService(EmbeddingModel embeddingModel) {
         this.embeddingModel = embeddingModel;
     }
 
+    @TraceLog("EmbeddingService.embed")
     public List<Double> embed(String text) {
-        log.info(("임베딩 변환: {} "), text.substring(0, Math.min(50, text.length())));
+        log.info("[EMBEDDING] inputLength={}", text == null ? 0 : text.length());
 
         float[] vector = embeddingModel.embed(text);
 
-        List<Double> result = new java.util.ArrayList<>();
-        for (float f : vector) {
-            result.add((double) f);
+        List<Double> result = new ArrayList<>();
+        for (float value : vector) {
+            result.add((double) value);
         }
-        log.info(("백터 크기: {}"), result.size());
-        return  result;
 
+        log.info("[EMBEDDING] vectorSize={}", result.size());
+        return result;
     }
 }
