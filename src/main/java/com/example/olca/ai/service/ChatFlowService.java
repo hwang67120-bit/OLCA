@@ -52,22 +52,22 @@ public class ChatFlowService {
         long start = System.currentTimeMillis();
 
         return Mono.defer(() -> {
-                    log.info("[AI_TRACE_START] traceId={} userId={} sessionId={} questionLength={}",
+                    log.info("[AI_TRACE_START] traceId={} userId={}(사용자) sessionId={}(대화) questionLength={}(질문길이)",
                             traceId, userId, sessionId, question == null ? 0 : question.length());
 
                     return chatFlowRepository.findCachedAnswer(question, userId)
                             .map(chatFlow -> {
-                                log.info("[AI_CACHE] traceId={} hit=true", traceId);
+                                log.info("[AI_CACHE] traceId={} hit=true(캐시적중)", traceId);
                                 return chatFlow.getAnswer();
                             })
                             .switchIfEmpty(Mono.defer(() -> {
-                                log.info("[AI_CACHE] traceId={} hit=false", traceId);
+                                log.info("[AI_CACHE] traceId={} hit=false(캐시미스)", traceId);
                                 return processNewQuestion(question, userId, sessionId);
                             }));
                 })
-                .doOnSuccess(answer -> log.info("[AI_TRACE_END] traceId={} totalMs={} success=true",
+                .doOnSuccess(answer -> log.info("[AI_TRACE_END] traceId={} totalMs={}(총소요시간ms) success=true(성공)",
                         traceId, System.currentTimeMillis() - start))
-                .doOnError(error -> log.warn("[AI_TRACE_END] traceId={} totalMs={} success=false error={}",
+                .doOnError(error -> log.warn("[AI_TRACE_END] traceId={} totalMs={}(총소요시간ms) success=false(실패) error={}",
                         traceId, System.currentTimeMillis() - start, error.getClass().getSimpleName()))
                 .contextWrite(context -> context.put(TraceKeys.TRACE_ID, traceId));
     }
@@ -148,9 +148,11 @@ public class ChatFlowService {
                                         List<Long> tagIds, List<String> knowledgeIds) {
 
         boolean knowledgeQuestion = knowledgeDomainGuard.isKnowledgeQusestion(question);
-        log.info("[AI_ROUTE] route={} reason={}",
+        log.info("[AI_ROUTE] route={}({}) reason={}({})",
                 knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
-                knowledgeQuestion ? "knowledge_intent" : "no_knowledge_intent");
+                knowledgeQuestion ? "학습형" : "대화형",
+                knowledgeQuestion ? "knowledge_intent" : "no_knowledge_intent",
+                knowledgeQuestion ? "학습의도있음" : "학습의도없음");
 
         Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeQuestion
                 ? knowledgeBaseService.vectorSearch(question, 3)
@@ -158,8 +160,9 @@ public class ChatFlowService {
 
         return knowledgeDocsMono
                 .flatMap(knowledgeDocs -> {
-                    log.info("[AI_CONTEXT] route={} knowledgeCount={} messageCount={} tagCount={} textSearchCount={}",
+                    log.info("[AI_CONTEXT] route={}({}) knowledgeCount={}(지식문서수) messageCount={}(대화수) tagCount={}(태그수) textSearchCount={}(텍스트검색수)",
                             knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
+                            knowledgeQuestion ? "학습형" : "대화형",
                             knowledgeDocs.size(), messageIds.size(), tagIds.size(), knowledgeIds.size());
 
                     List<ChatMessage> messages = messageIds.isEmpty() ? List.of()

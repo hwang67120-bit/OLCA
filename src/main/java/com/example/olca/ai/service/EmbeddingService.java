@@ -20,7 +20,7 @@ public class EmbeddingService {
 
     @TraceLog("EmbeddingService.embed")
     public List<Double> embed(String text) {
-        log.info("[EMBEDDING] inputLength={}", text == null ? 0 : text.length());
+        log.info("[EMBEDDING] inputLength={}(입력길이)", text == null ? 0 : text.length());
 
         float[] vector = embeddingModel.embed(text);
 
@@ -29,7 +29,7 @@ public class EmbeddingService {
             result.add((double) value);
         }
 
-        log.info("[EMBEDDING] vectorSize={}", result.size());
+        log.info("[EMBEDDING] vectorSize={}(벡터크기)", result.size());
         return result;
     }
 }

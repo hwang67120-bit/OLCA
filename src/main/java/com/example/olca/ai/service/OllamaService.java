@@ -17,7 +17,7 @@ public class OllamaService {
 
     @TraceLog("OllamaService.chat")
     public String chat(String sytemPrompt, String userMessage) {
-        log.info("[LLM_REQUEST] systemPromptLength={} userPromptLength={}",
+        log.info("[LLM_REQUEST] systemPromptLength={}(시스템프롬프트길이) userPromptLength={}(사용자프롬프트길이)",
                 sytemPrompt == null ? 0 : sytemPrompt.length(),
                 userMessage == null ? 0 : userMessage.length());
 
@@ -27,7 +27,7 @@ public class OllamaService {
                 .call()
                 .content();
 
-        log.info("[LLM_RESPONSE] responseLength={}", response == null ? 0 : response.length());
+        log.info("[LLM_RESPONSE] responseLength={}(응답길이)", response == null ? 0 : response.length());
         return response;
     }
 }

@@ -70,7 +70,7 @@ public class KnowledgeBaseService {
     public Mono<List<KnowledgeBase>> vectorSearch(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("[VECTOR_SEARCH] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
+                    log.info("[VECTOR_SEARCH] expandedQuestionLength={}(확장질문길이) topN={}(검색개수)", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -95,7 +95,7 @@ public class KnowledgeBaseService {
                                 )
                 )
                 .doOnSuccess(results ->
-                        log.info("[VECTOR_SEARCH] resultCount={} topics={}",
+                        log.info("[VECTOR_SEARCH] resultCount={}(검색결과수) topics={}(선택문서)",
                                 results.size(),
                                 results.stream().map(KnowledgeBase::getTopic).toList())
                 );
@@ -147,7 +147,7 @@ public class KnowledgeBaseService {
     public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
+                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={}(확장질문길이) topN={}(검색개수)", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -177,7 +177,7 @@ public class KnowledgeBaseService {
                                 )
                 )
                 .doOnSuccess(results ->
-                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={} topics={}",
+                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={}(검색결과수) topics={}(선택문서)",
                                 results.size(),
                                 results.stream().map(KnowledgeVectorSearchResponse::topic).toList())
                 );
