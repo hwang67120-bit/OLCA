@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class KnowledgeBaseService {
 
+    private static final double MIN_VECTOR_SIMILARITY = 0.75;
+
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final EmbeddingService embeddingService;
     private final QueryExpansionService queryExpansionService;
@@ -86,16 +88,20 @@ public class KnowledgeBaseService {
                                         ))
                                         .values()
                                         .stream()
-                                        .sorted((a, b) -> Double.compare(
-                                                cosineSimilarity(b.getEmbedding(), questionVector),
-                                                cosineSimilarity(a.getEmbedding(), questionVector)
+                                        .map(kb -> new VectorSearchCandidate(
+                                                kb,
+                                                cosineSimilarity(kb.getEmbedding(), questionVector)
                                         ))
+                                        .filter(candidate -> candidate.similarity() >= MIN_VECTOR_SIMILARITY)
+                                        .sorted((a, b) -> Double.compare(b.similarity(), a.similarity()))
                                         .limit(topN)
+                                        .map(VectorSearchCandidate::knowledgeBase)
                                         .toList()
                                 )
                 )
                 .doOnSuccess(results ->
-                        log.info("[VECTOR_SEARCH] resultCount={}(검색결과수) topics={}(선택문서)",
+                        log.info("[VECTOR_SEARCH] minSimilarity={}(최소유사도) resultCount={}(검색결과수) topics={}(선택문서)",
+                                MIN_VECTOR_SIMILARITY,
                                 results.size(),
                                 results.stream().map(KnowledgeBase::getTopic).toList())
                 );
@@ -201,5 +207,11 @@ public class KnowledgeBaseService {
     public Flux<KnowledgeBaseResponse> findAll() {
         return knowledgeBaseRepository.findAll()
                 .map(KnowledgeBaseResponse::from);
+    }
+
+    private record VectorSearchCandidate(
+            KnowledgeBase knowledgeBase,
+            double similarity
+    ) {
     }
 }
