@@ -55,6 +55,11 @@ public class ChatFlowService {
                     log.info("[AI_TRACE_START] traceId={} userId={}(사용자) sessionId={}(대화) questionLength={}(질문길이)",
                             traceId, userId, sessionId, question == null ? 0 : question.length());
 
+                    if (question == null || question.isBlank()) {
+                        log.info("[AI_EXCEPTION] traceId={} type=EMPTY_QUESTION(빈질문)", traceId);
+                        return Mono.just("질문이 비어 있어. 궁금한 내용을 한 문장으로 말해줘.");
+                    }
+
                     return chatFlowRepository.findCachedAnswer(question, userId)
                             .map(chatFlow -> {
                                 log.info("[AI_CACHE] traceId={} hit=true(캐시적중)", traceId);
@@ -154,12 +159,26 @@ public class ChatFlowService {
                 knowledgeQuestion ? "knowledge_intent" : "no_knowledge_intent",
                 knowledgeQuestion ? "학습의도있음" : "학습의도없음");
 
+        if (knowledgeQuestion) {
+            sendPreResponse("잠깐만, 관련 내용을 찾는 중이야.");
+        }
+
         Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeQuestion
                 ? knowledgeBaseService.vectorSearch(question, 3)
                 : Mono.just(List.of());
 
         return knowledgeDocsMono
                 .flatMap(knowledgeDocs -> {
+                    if (knowledgeQuestion && knowledgeDocs.isEmpty()) {
+                        log.info("[AI_EXCEPTION] type=KNOWLEDGE_NOT_FOUND(지식검색결과없음)");
+                        return Mono.just("저장된 관련 자료를 못 찾겠어. 키워드를 조금 더 구체적으로 말해줘.");
+                    }
+
+                    if (!knowledgeQuestion && isTooShortConversation(question)) {
+                        log.info("[AI_EXCEPTION] type=SHORT_CONVERSATION(짧은대화형입력)");
+                        return Mono.just("조금만 더 구체적으로 말해줘. 예를 들면 궁금한 주제나 원하는 작업을 같이 말해주면 좋아.");
+                    }
+
                     log.info("[AI_CONTEXT] route={}({}) knowledgeCount={}(지식문서수) messageCount={}(대화수) tagCount={}(태그수) textSearchCount={}(텍스트검색수)",
                             knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
                             knowledgeQuestion ? "학습형" : "대화형",
@@ -180,6 +199,23 @@ public class ChatFlowService {
                             ollamaService.chat(systemPrompt, userPrompt)
                     ).subscribeOn(Schedulers.boundedElastic());
                 });
+    }
+
+    private boolean isTooShortConversation(String question) {
+        String normalized = question == null ? "" : question.trim();
+        return normalized.length() <= 1;
+    }
+
+    private void sendPreResponse(String message) {
+        log.info("[AI_PRE_RESPONSE] message={}(선응답)", message);
+        vtuberClient.sendTtsOnly(message)
+                .doOnError(error -> log.warn("[AI_PRE_RESPONSE] send=false(전송실패) error={}",
+                        error.getClass().getSimpleName()))
+                .subscribe(
+                        ignored -> log.info("[AI_PRE_RESPONSE] send=true(전송성공)"),
+                        error -> {
+                        }
+                );
     }
 
     private Mono<List<ChatMessage>> fetchMessages(List<Long> ids) {
