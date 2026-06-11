@@ -20,6 +20,7 @@ spring:
         options:
           model: ${OLLAMA_MODEL}
           temperature: 0.3
+          num-predict: 256
       embedding:
           model: nomic-embed-text
 
