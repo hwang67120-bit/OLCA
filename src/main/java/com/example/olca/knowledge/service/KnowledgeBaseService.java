@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class KnowledgeBaseService {
 
-    private static final double MIN_VECTOR_SIMILARITY = 0.75;
+    private static final double MIN_VECTOR_SIMILARITY = 0.85;
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final EmbeddingService embeddingService;
@@ -92,6 +92,9 @@ public class KnowledgeBaseService {
                                                 kb,
                                                 cosineSimilarity(kb.getEmbedding(), questionVector)
                                         ))
+                                        .peek(candidate -> log.info("[VECTOR_SCORE] topic={} similarity={}(유사도)",
+                                                candidate.knowledgeBase().getTopic(),
+                                                String.format("%.4f", candidate.similarity())))
                                         .filter(candidate -> candidate.similarity() >= MIN_VECTOR_SIMILARITY)
                                         .sorted((a, b) -> Double.compare(b.similarity(), a.similarity()))
                                         .limit(topN)
