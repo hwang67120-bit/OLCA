@@ -68,15 +68,8 @@ public class ChatFlowService {
                         return processNewQuestion(question, userId, sessionId, false);
                     }
 
-                    return chatFlowRepository.findCachedAnswer(question, userId)
-                            .map(chatFlow -> {
-                                log.info("[AI_CACHE] traceId={} hit=true(캐시적중)", traceId);
-                                return chatFlow.getAnswer();
-                            })
-                            .switchIfEmpty(Mono.defer(() -> {
-                                log.info("[AI_CACHE] traceId={} hit=false(캐시미스)", traceId);
-                                return processNewQuestion(question, userId, sessionId, true);
-                            }));
+                    log.info("[AI_CACHE] traceId={} skip=true(캐시건너뜀) reason=knowledge_search_first(학습형검색우선)", traceId);
+                    return processNewQuestion(question, userId, sessionId, true);
                 })
                 .doOnSuccess(answer -> log.info("[AI_TRACE_END] traceId={} totalMs={}(총소요시간ms) success=true(성공)",
                         traceId, System.currentTimeMillis() - start))
