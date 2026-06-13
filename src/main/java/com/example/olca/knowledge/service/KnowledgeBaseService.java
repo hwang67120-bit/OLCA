@@ -5,6 +5,8 @@ import com.example.olca.global.trace.TraceLog;
 import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.dto.response.KnowledgeVectorSearchResponse;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
+import com.example.olca.knowledge.search.KnowledgeReranker;
+import com.example.olca.knowledge.search.KnowledgeSearchCandidate;
 import com.example.olca.session.dto.response.KnowledgeBaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ public class KnowledgeBaseService {
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final EmbeddingService embeddingService;
     private final QueryExpansionService queryExpansionService;
+    private final KnowledgeReranker knowledgeReranker;
 
     @Transactional
     public Mono<KnowledgeBaseResponse> saveWithEmbedding(
@@ -72,7 +75,7 @@ public class KnowledgeBaseService {
     public Mono<List<KnowledgeBase>> vectorSearch(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("[VECTOR_SEARCH] expandedQuestionLength={}(확장질문길이) topN={}(검색개수)", expandedQuestion.length(), topN);
+                    log.info("[VECTOR_SEARCH] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -80,53 +83,31 @@ public class KnowledgeBaseService {
                         knowledgeBaseRepository.findAll()
                                 .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
                                 .collectList()
-                                .map(all -> all.stream()
-                                        .collect(Collectors.toMap(
-                                                KnowledgeBase::getTopic,
-                                                Function.identity(),
-                                                (a, b) -> a.getVersion() >= b.getVersion() ? a : b
-                                        ))
-                                        .values()
-                                        .stream()
-                                        .map(kb -> new VectorSearchCandidate(
-                                                kb,
-                                                cosineSimilarity(kb.getEmbedding(), questionVector)
-                                        ))
-                                        .peek(candidate -> log.info("[VECTOR_SCORE] topic={} similarity={}(유사도)",
-                                                candidate.knowledgeBase().getTopic(),
-                                                String.format("%.4f", candidate.similarity())))
-                                        .filter(candidate -> candidate.similarity() >= MIN_VECTOR_SIMILARITY)
-                                        .sorted((a, b) -> Double.compare(b.similarity(), a.similarity()))
-                                        .limit(topN)
-                                        .map(VectorSearchCandidate::knowledgeBase)
-                                        .toList()
-                                )
+                                .map(all -> {
+                                    List<KnowledgeBase> latestDocuments = all.stream()
+                                            .collect(Collectors.toMap(
+                                                    KnowledgeBase::getTopic,
+                                                    Function.identity(),
+                                                    (a, b) -> a.getVersion() >= b.getVersion() ? a : b
+                                            ))
+                                            .values()
+                                            .stream()
+                                            .toList();
+
+                                    return knowledgeReranker.rank(question, questionVector, latestDocuments, topN)
+                                            .stream()
+                                            .map(KnowledgeSearchCandidate::knowledgeBase)
+                                            .toList();
+                                })
                 )
                 .doOnSuccess(results ->
-                        log.info("[VECTOR_SEARCH] minSimilarity={}(최소유사도) resultCount={}(검색결과수) topics={}(선택문서)",
+                        log.info("[VECTOR_SEARCH] minSimilarity={} resultCount={} topics={}",
                                 MIN_VECTOR_SIMILARITY,
                                 results.size(),
                                 results.stream().map(KnowledgeBase::getTopic).toList())
                 );
     }
 
-    private double cosineSimilarity(List<Double> vectorA, List<Double> vectorB) {
-        if (vectorA.size() != vectorB.size()) return 0.0;
-
-        double dotProduct = 0.0;
-        double normA = 0.0;
-        double normB = 0.0;
-
-        for (int i = 0; i < vectorA.size(); i++) {
-            dotProduct += vectorA.get(i) * vectorB.get(i);
-            normA += Math.pow(vectorA.get(i), 2);
-            normB += Math.pow(vectorB.get(i), 2);
-        }
-
-        if (normA == 0.0 || normB == 0.0) return 0.0;
-
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-    }
 
     @Transactional
     public Mono<KnowledgeBaseResponse> createOrUpdate(String topic, String content, List<String> keywords) {
@@ -156,7 +137,7 @@ public class KnowledgeBaseService {
     public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
         return Mono.fromCallable(() -> {
                     String expandedQuestion = queryExpansionService.expand(question);
-                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={}(확장질문길이) topN={}(검색개수)", expandedQuestion.length(), topN);
+                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
                     return embeddingService.embed(expandedQuestion);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
@@ -164,29 +145,35 @@ public class KnowledgeBaseService {
                         knowledgeBaseRepository.findAll()
                                 .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
                                 .collectList()
-                                .map(all -> all.stream()
-                                        .collect(Collectors.toMap(
-                                                KnowledgeBase::getTopic,
-                                                Function.identity(),
-                                                (a, b) -> a.getVersion() >= b.getVersion() ? a : b
-                                        ))
-                                        .values()
-                                        .stream()
-                                        .map(kb -> new KnowledgeVectorSearchResponse(
-                                                kb.getId(),
-                                                kb.getTopic(),
-                                                kb.getContent(),
-                                                kb.getKeywords(),
-                                                kb.getVersion(),
-                                                cosineSimilarity(kb.getEmbedding(), questionVector)
-                                        ))
-                                        .sorted((a, b) -> Double.compare(b.similarity(), a.similarity()))
-                                        .limit(topN)
-                                        .toList()
-                                )
+                                .map(all -> {
+                                    List<KnowledgeBase> latestDocuments = all.stream()
+                                            .collect(Collectors.toMap(
+                                                    KnowledgeBase::getTopic,
+                                                    Function.identity(),
+                                                    (a, b) -> a.getVersion() >= b.getVersion() ? a : b
+                                            ))
+                                            .values()
+                                            .stream()
+                                            .toList();
+
+                                    return knowledgeReranker.rank(question, questionVector, latestDocuments, topN)
+                                            .stream()
+                                            .map(candidate -> new KnowledgeVectorSearchResponse(
+                                                    candidate.knowledgeBase().getId(),
+                                                    candidate.knowledgeBase().getTopic(),
+                                                    candidate.knowledgeBase().getContent(),
+                                                    candidate.knowledgeBase().getKeywords(),
+                                                    candidate.knowledgeBase().getVersion(),
+                                                    candidate.vectorScore(),
+                                                    candidate.finalScore(),
+                                                    candidate.matchedKeywords(),
+                                                    candidate.reasons()
+                                            ))
+                                            .toList();
+                                })
                 )
                 .doOnSuccess(results ->
-                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={}(검색결과수) topics={}(선택문서)",
+                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={} topics={}",
                                 results.size(),
                                 results.stream().map(KnowledgeVectorSearchResponse::topic).toList())
                 );
@@ -212,9 +199,4 @@ public class KnowledgeBaseService {
                 .map(KnowledgeBaseResponse::from);
     }
 
-    private record VectorSearchCandidate(
-            KnowledgeBase knowledgeBase,
-            double similarity
-    ) {
-    }
 }

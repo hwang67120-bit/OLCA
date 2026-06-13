@@ -1,0 +1,67 @@
+package com.example.olca.knowledge.search;
+
+import com.example.olca.knowledge.domain.KnowledgeBase;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+public final class KnowledgeSearchText {
+
+    private static final Set<String> STOP_WORDS = Set.of(
+            "궁금", "질문", "검색", "찾아줘", "찾아", "알려줘", "알려", "설명", "정리",
+            "무엇", "뭐야", "왜", "어떻게", "언제", "차이", "비교", "사용법",
+            "자료", "내용", "자세히", "간단히",
+            "the", "and", "for", "with", "about"
+    );
+
+    private KnowledgeSearchText() {
+    }
+
+    public static String normalize(String text) {
+        String normalized = (text == null ? "" : text).toLowerCase(Locale.ROOT);
+
+        return normalized
+                .replace("자바", "자바 java")
+                .replace("클래스", "클래스 class classes")
+                .replace("객체", "객체 object objects")
+                .replace("인터페이스", "인터페이스 interface")
+                .replace("상속", "상속 inheritance")
+                .replace("빌더", "빌더 builder")
+                .replace("팩토리", "팩토리 factory")
+                .replace("싱글톤", "싱글톤 singleton")
+                .replace("스트림", "스트림 stream");
+    }
+
+    public static List<String> extractKeywords(String question) {
+        String normalizedQuestion = normalize(question);
+
+        return Arrays.stream(normalizedQuestion.split("[^a-z0-9가-힣]+"))
+                .map(String::trim)
+                .filter(word -> word.length() >= 2)
+                .filter(word -> !STOP_WORDS.contains(word))
+                .distinct()
+                .toList();
+    }
+
+    public static String documentText(KnowledgeBase knowledgeBase) {
+        return normalize(
+                knowledgeBase.getTopic() + " "
+                        + String.join(" ", knowledgeBase.getKeywords() == null ? List.of() : knowledgeBase.getKeywords())
+                        + " "
+                        + knowledgeBase.getContent()
+        );
+    }
+
+    public static List<String> matchedKeywords(List<String> queryKeywords, String normalizedDocumentText) {
+        if (queryKeywords.isEmpty()) {
+            return List.of();
+        }
+
+        return queryKeywords.stream()
+                .filter(normalizedDocumentText::contains)
+                .distinct()
+                .toList();
+    }
+}

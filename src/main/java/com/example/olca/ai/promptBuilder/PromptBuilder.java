@@ -27,6 +27,10 @@ public class PromptBuilder {
             5. 근거가 부족하면 모른다고 말하고, 더 정확한 키워드를 요청한다.
             6. 코드 예시는 사용자가 요청할 때만 제공한다.
             7. 마지막에는 필요한 경우 짧은 후속 질문 1개만 던진다.
+            8. 답변은 TTS로 읽히므로 사람에게 말하듯 자연스럽게 작성한다.
+            9. Markdown 문법을 사용하지 않는다. 별표, 하이픈 목록, 번호 목록, 코드블록, 표를 쓰지 않는다.
+            10. @, #, *, ` 같은 기호를 읽어야 하는 형태로 쓰지 않는다.
+            11. 라이브러리 어노테이션은 "Builder 어노테이션"처럼 말로 풀어서 표현한다.
             """;
 
     public String buildSystemPrompt() {
@@ -41,9 +45,11 @@ public class PromptBuilder {
 
         return """
                 [이번 답변 제한]
-                - 500자 이내로 답한다.
-                - 문서처럼 길게 설명하지 않는다.
-                - 핵심 답변 후 필요하면 이어서 설명할지 물어본다.
+                500자 이내로 답한다.
+                문서처럼 길게 설명하지 않는다.
+                Markdown 문법, 별표 강조, 하이픈 목록, 번호 목록을 절대 쓰지 않는다.
+                TTS가 읽기 좋게 짧은 대화체 문장으로 말한다.
+                핵심 답변 후 필요하면 이어서 설명할지 물어본다.
 
                 """
                 + knowledge
@@ -57,8 +63,8 @@ public class PromptBuilder {
 
         StringBuilder sb = new StringBuilder("[관련 지식]\n");
         for (KnowledgeBase kb : knowledge) {
-            sb.append("- topic: ").append(kb.getTopic()).append("\n")
-                    .append("  content: ").append(limit(kb.getContent(), MAX_KNOWLEDGE_CONTENT_LENGTH)).append("\n");
+            sb.append("주제: ").append(kb.getTopic()).append("\n")
+                    .append("내용: ").append(limit(kb.getContent(), MAX_KNOWLEDGE_CONTENT_LENGTH)).append("\n");
         }
         return sb.append("\n").toString();
     }

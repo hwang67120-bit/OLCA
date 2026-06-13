@@ -8,6 +8,9 @@ public record KnowledgeVectorSearchResponse(
         String content,
         List<String> keywords,
         Integer version,
-        double similarity
+        double similarity,
+        double finalScore,
+        List<String> matchedKeywords,
+        List<String> reasons
 ) {
 }
