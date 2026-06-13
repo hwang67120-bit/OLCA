@@ -25,6 +25,7 @@ public class ChatFlow {
     private List<String> relatedKnowLedgeIds;
 
     private String answer;
+    private boolean cacheable;
 
     @CreatedDate
     private LocalDateTime createAt;
@@ -32,7 +33,7 @@ public class ChatFlow {
     @Builder
     public ChatFlow(Long sessionId, Long userId, String question,
                     List<Long> relareMessageIds, List<Long> relatedTagIds,
-    List<String> relatedKnowLedgeIds, String answer) {
+                    List<String> relatedKnowLedgeIds, String answer, boolean cacheable) {
 
         this.sessionId = sessionId;
         this.userId = userId;
@@ -41,5 +42,6 @@ public class ChatFlow {
         this.relatedTagIds = relatedTagIds;
         this.relatedKnowLedgeIds = relatedKnowLedgeIds;
         this.answer = answer;
+        this.cacheable = cacheable;
     }
 }
