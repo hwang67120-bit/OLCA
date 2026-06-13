@@ -11,7 +11,9 @@ import java.util.List;
 
 public interface KnowledgeBaseRepository extends ReactiveMongoRepository<KnowledgeBase, String> {
 
-    // Text Search (자연어 검색)
+    /**
+     * 입력된 자연어를 MongoDB text score로 계산하고 관련도가 높은 지식을 출력한다.
+     */
     @Aggregation(pipeline = {
             "{ $match: { $text: { $search: ?0 } } }",
             "{ $addFields: { score: { $meta: 'textScore' } } }",
@@ -20,14 +22,18 @@ public interface KnowledgeBaseRepository extends ReactiveMongoRepository<Knowled
     })
     Flux<KnowledgeBase> textSearch(String searchText);
 
-    // Keywords 배열 검색
+    /**
+     * 입력된 키워드 배열과 겹치는 지식을 찾고 최신 버전 우선으로 출력한다.
+     */
     @Aggregation(pipeline = {
             "{ $match: { keywords: { $in: ?0 } } }",
             "{ $sort: { version: -1 } }"
     })
     Flux<KnowledgeBase> searchByKeywords(List<String> keywords);
 
-    // Topic의 최신 버전 조회
+    /**
+     * 입력된 topic에 해당하는 지식 중 version이 가장 높은 문서를 출력한다.
+     */
     @Aggregation(pipeline = {
             "{ $match: { topic: ?0 } }",
             "{ $sort: { version: -1 } }",
@@ -35,7 +41,8 @@ public interface KnowledgeBaseRepository extends ReactiveMongoRepository<Knowled
     })
     Mono<KnowledgeBase> findLatestByTopic(String topic);
 
-    // Topic 존재 여부
+    /**
+     * 입력된 topic이 저장소에 존재하는지 검증 결과를 출력한다.
+     */
     Mono<Boolean> existsByTopic(String topic);
 }
-

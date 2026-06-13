@@ -24,25 +24,33 @@ public class KnowledgeBaseController {
     private final KnowledgeBaseService knowledgeBaseService;
     private final KnowledgeImportService knowledgeImportService;
 
-    // 전체 조회
+    /**
+     * 저장된 지식 데이터를 입력 조건 없이 조회하고 전체 목록으로 출력한다.
+     */
     @GetMapping
     public Flux<KnowledgeBaseResponse> findAll() {
         return knowledgeBaseService.findAll();
     }
 
-    // 자연어 검색
+    /**
+     * 입력된 자연어 검색어를 텍스트 검색으로 처리하고 관련 지식 목록을 출력한다.
+     */
     @GetMapping("/search")
     public Flux<KnowledgeBaseResponse> textSearch(@RequestParam String q) {
         return knowledgeBaseService.textSearch(q);
     }
 
-    // Keywords 검색
+    /**
+     * 입력된 키워드 목록을 기준으로 지식을 필터링하고 일치 결과를 출력한다.
+     */
     @GetMapping("/keywords")
     public Flux<KnowledgeBaseResponse> searchByKeywords(@RequestParam List<String> keywords) {
         return knowledgeBaseService.searchByKeywords(keywords);
     }
 
-    // Topic 최신 버전 조회
+    /**
+     * 입력된 topic의 최신 버전을 선택해 단일 지식 응답으로 출력한다.
+     */
     @GetMapping("/topic/{topic}")
     public Mono<KnowledgeBaseResponse> findLatestByTopic(@PathVariable String topic) {
         return knowledgeBaseService.findLatestByTopic(topic);
