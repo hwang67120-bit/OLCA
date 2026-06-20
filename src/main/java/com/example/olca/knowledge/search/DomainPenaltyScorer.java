@@ -9,8 +9,12 @@ import java.util.Set;
 public class DomainPenaltyScorer implements KnowledgeCandidateScorer {
 
     private static final double DESIGN_PATTERN_MISMATCH_PENALTY = 0.35;
+    private static final double UNKNOWN_PATTERN_PENALTY = 1.0;
     private static final Set<String> DESIGN_PATTERN_TERMS = Set.of(
             "design-pattern", "design pattern", "pattern", "패턴",
+            "builder", "factory", "singleton", "빌더", "팩토리", "싱글톤"
+    );
+    private static final Set<String> KNOWN_PATTERN_TERMS = Set.of(
             "builder", "factory", "singleton", "빌더", "팩토리", "싱글톤"
     );
     private static final Set<String> JAVA_BASIC_TERMS = Set.of(
@@ -25,7 +29,24 @@ public class DomainPenaltyScorer implements KnowledgeCandidateScorer {
 
         boolean documentIsDesignPattern = containsAny(document, DESIGN_PATTERN_TERMS);
         boolean questionWantsDesignPattern = containsAny(question, DESIGN_PATTERN_TERMS);
+        boolean questionHasKnownPattern = containsAny(question, KNOWN_PATTERN_TERMS);
         boolean questionWantsJavaBasic = containsAny(question, JAVA_BASIC_TERMS);
+
+        /**
+         * Reject fake or unsupported pattern names.
+         * Input: generic pattern wording without a known pattern keyword.
+         * Process: penalize design-pattern documents so vector similarity alone cannot pass.
+         * Output: unknown pattern questions can return NONE instead of a plausible wrong pattern.
+         */
+        if (documentIsDesignPattern && questionWantsDesignPattern && !questionHasKnownPattern) {
+            return new CandidateScoreContribution(
+                    0.0,
+                    0.0,
+                    0.0,
+                    UNKNOWN_PATTERN_PENALTY,
+                    List.of("domain_penalty:unknown_pattern")
+            );
+        }
 
         if (!documentIsDesignPattern || questionWantsDesignPattern || !questionWantsJavaBasic) {
             return CandidateScoreContribution.empty();

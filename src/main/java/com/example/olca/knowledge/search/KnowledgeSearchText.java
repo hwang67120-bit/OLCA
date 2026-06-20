@@ -31,6 +31,12 @@ public final class KnowledgeSearchText {
                 .replace("빌더", "빌더 builder")
                 .replace("팩토리", "팩토리 factory")
                 .replace("싱글톤", "싱글톤 singleton")
+                .replace("예외처리", "예외처리 exception exceptions try catch throw throws")
+                .replace("예외", "예외 exception exceptions try catch throw throws")
+                .replace("throws", "throws throw exception exceptions 예외")
+                .replace("throw", "throw exception exceptions 예외")
+                .replace("try", "try exception exceptions 예외")
+                .replace("catch", "catch exception exceptions 예외")
                 .replace("스트림", "스트림 stream");
     }
 

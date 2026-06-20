@@ -93,7 +93,7 @@ public class KnowledgeReranker {
 
     private boolean usable(KnowledgeSearchCandidate candidate) {
         return candidate.topicPass()
-                && (candidate.vectorScore() >= MIN_VECTOR_SIMILARITY || candidate.finalScore() >= MIN_FINAL_SCORE);
+                && candidate.finalScore() >= MIN_FINAL_SCORE;
     }
 
     private void logScore(KnowledgeSearchCandidate candidate) {
