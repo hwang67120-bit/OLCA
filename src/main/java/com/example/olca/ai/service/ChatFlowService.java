@@ -5,6 +5,9 @@ import com.example.olca.ai.dto.Chatstsettings;
 import com.example.olca.ai.dto.PromptContext;
 import com.example.olca.ai.promptBuilder.PromptBuilder;
 import com.example.olca.ai.repository.ChatFlowRepository;
+import com.example.olca.ai.routing.ExecutionPolicy;
+import com.example.olca.ai.routing.IntentRoutingDecision;
+import com.example.olca.ai.routing.IntentRouter;
 import com.example.olca.ai.websocket.VTuberWebSocketClient;
 import com.example.olca.chat.domain.ChatMessage;
 import com.example.olca.chat.repository.ChatMessageRepository;
@@ -14,7 +17,6 @@ import com.example.olca.global.trace.TraceLog;
 import com.example.olca.knowledge.domain.KnowledgeBase;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
 import com.example.olca.knowledge.service.KnowledgeBaseService;
-import com.example.olca.knowledge.service.KnowledgeDomainGuard;
 import com.example.olca.tag.domain.Tag;
 import com.example.olca.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +42,7 @@ public class ChatFlowService {
     private final KnowledgeBaseService knowledgeBaseService;
     private final OllamaService ollamaService;
     private final PromptBuilder promptBuilder;
-    private final KnowledgeDomainGuard knowledgeDomainGuard;
+    private final IntentRouter intentRouter;
 
     private final Chatstsettings settings;
     private final List<String> stopWords;
@@ -57,19 +59,19 @@ public class ChatFlowService {
 
                     if (question == null || question.isBlank()) {
                         log.info("[AI_EXCEPTION] traceId={} type=EMPTY_QUESTION(빈질문)", traceId);
-                        return Mono.just("질문이 비어 있어. 궁금한 내용을 한 문장으로 말해줘.");
+                        return Mono.just("질문이 비어 있습니다. 궁금한 내용을 한 문장으로 말씀해 주세요.");
                     }
 
-                    boolean knowledgeQuestion = knowledgeDomainGuard.isKnowledgeQusestion(question);
-                    logRoute(knowledgeQuestion);
+                    IntentRoutingDecision decision = intentRouter.route(question);
+                    logRoute(decision);
 
-                    if (!knowledgeQuestion) {
-                        log.info("[AI_CACHE] traceId={} skip=true(캐시건너뜀) reason=conversation_route(대화형)", traceId);
-                        return processNewQuestion(question, userId, sessionId, false);
+                    if (!decision.policy().ragAllowed()) {
+                        log.info("[AI_CACHE] traceId={} skip=true(캐시건너뜀) reason={}", traceId, decision.policy().cacheSkipReason());
+                        return processNewQuestion(question, userId, sessionId, decision);
                     }
 
-                    log.info("[AI_CACHE] traceId={} skip=true(캐시건너뜀) reason=knowledge_search_first(학습형검색우선)", traceId);
-                    return processNewQuestion(question, userId, sessionId, true);
+                    log.info("[AI_CACHE] traceId={} skip=true(캐시건너뜀) reason=route_first_then_policy({})", traceId, decision.route());
+                    return processNewQuestion(question, userId, sessionId, decision);
                 })
                 .doOnSuccess(answer -> log.info("[AI_TRACE_END] traceId={} totalMs={}(총소요시간ms) success=true(성공)",
                         traceId, System.currentTimeMillis() - start))
@@ -78,18 +80,18 @@ public class ChatFlowService {
                 .contextWrite(context -> context.put(TraceKeys.TRACE_ID, traceId));
     }
 
-    private Mono<String> processNewQuestion(String question, Long userId, Long sessionId, boolean knowledgeQuestion) {
+    private Mono<String> processNewQuestion(String question, Long userId, Long sessionId, IntentRoutingDecision decision) {
         return Mono.zip(
                         validatePastMessages(userId, sessionId),
                         validateTags(question),
-                        knowledgeQuestion ? validateKnowledge(question) : Mono.<List<String>>just(List.of())
+                        decision.policy().ragAllowed() ? validateKnowledge(question) : Mono.<List<String>>just(List.of())
                 )
                 .flatMap(tuple -> {
                     List<Long> relatedMessageIds = tuple.getT1();
                     List<Long> relatedTagIds = tuple.getT2();
                     List<String> relatedKnowledgeIds = tuple.getT3();
 
-                    return generateAnswer(question, relatedMessageIds, relatedTagIds, relatedKnowledgeIds, knowledgeQuestion)
+                    return generateAnswer(question, relatedMessageIds, relatedTagIds, relatedKnowledgeIds, decision)
                             .flatMap(result -> {
                                 if (!result.cacheable()) {
                                     log.info("[AI_CACHE] save=false(캐시저장안함) reason={}", result.cacheSkipReason());
@@ -158,38 +160,40 @@ public class ChatFlowService {
 
     private Mono<AnswerResult> generateAnswer(String question, List<Long> messageIds,
                                               List<Long> tagIds, List<String> knowledgeIds,
-                                              boolean knowledgeQuestion) {
-        if (knowledgeQuestion) {
-            sendPreResponse("잠깐만, 관련 내용을 찾는 중이야.");
+                                              IntentRoutingDecision decision) {
+        ExecutionPolicy policy = decision.policy();
+
+        if (policy.preResponse() != null) {
+            sendPreResponse(policy.preResponse());
         }
 
-        Mono<List<KnowledgeBase>> knowledgeDocsMono = knowledgeQuestion
+        Mono<List<KnowledgeBase>> knowledgeDocsMono = policy.ragAllowed()
                 ? knowledgeBaseService.vectorSearch(question, 3)
                 : Mono.just(List.of());
 
         return knowledgeDocsMono
                 .flatMap(knowledgeDocs -> {
-                    if (knowledgeQuestion && knowledgeDocs.isEmpty()) {
+                    if (policy.ragRequired() && knowledgeDocs.isEmpty()) {
                         log.info("[AI_EXCEPTION] type=KNOWLEDGE_NOT_FOUND(지식검색결과없음)");
                         return Mono.just(new AnswerResult(
-                                "저장된 관련 자료를 못 찾겠어. 키워드를 조금 더 구체적으로 말해줘.",
+                                policy.notFoundAnswer(),
                                 false,
                                 "knowledge_not_found"
                         ));
                     }
 
-                    if (!knowledgeQuestion && isTooShortConversation(question)) {
+                    if (!policy.ragAllowed() && isTooShortConversation(question)) {
                         log.info("[AI_EXCEPTION] type=SHORT_CONVERSATION(짧은대화형입력)");
                         return Mono.just(new AnswerResult(
-                                "조금만 더 구체적으로 말해줘. 예를 들면 궁금한 주제나 원하는 작업을 같이 말해주면 좋아.",
+                                "조금만 더 구체적으로 말씀해 주세요. 궁금한 주제나 원하는 작업을 함께 알려주시면 좋습니다.",
                                 false,
                                 "short_conversation"
                         ));
                     }
 
                     log.info("[AI_CONTEXT] route={}({}) knowledgeCount={}(지식문서수) messageCount={}(대화수) tagCount={}(태그수) textSearchCount={}(텍스트검색수)",
-                            knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
-                            knowledgeQuestion ? "학습형" : "대화형",
+                            decision.route(),
+                            decision.route().label(),
                             knowledgeDocs.size(), messageIds.size(), tagIds.size(), knowledgeIds.size());
 
                     List<ChatMessage> messages = messageIds.isEmpty() ? List.of()
@@ -200,26 +204,27 @@ public class ChatFlowService {
 
                     String systemPrompt = promptBuilder.buildSystemPrompt();
                     String userPrompt = promptBuilder.buildUserPrompt(
-                            new PromptContext(question, messages, tags, knowledgeDocs)
+                            new PromptContext(question, messages, tags, knowledgeDocs),
+                            decision
                     );
 
                     return Mono.fromCallable(() -> {
                         String answer = ollamaService.chat(systemPrompt, userPrompt);
                         return new AnswerResult(
                                 answer,
-                                knowledgeQuestion,
-                                knowledgeQuestion ? "cacheable_knowledge_answer" : "conversation_route"
+                                policy.cacheableAnswer(),
+                                policy.cacheSkipReason()
                         );
                     }).subscribeOn(Schedulers.boundedElastic());
                 });
     }
 
-    private void logRoute(boolean knowledgeQuestion) {
+    private void logRoute(IntentRoutingDecision decision) {
         log.info("[AI_ROUTE] route={}({}) reason={}({})",
-                knowledgeQuestion ? "KNOWLEDGE" : "CONVERSATION",
-                knowledgeQuestion ? "학습형" : "대화형",
-                knowledgeQuestion ? "knowledge_intent" : "no_knowledge_intent",
-                knowledgeQuestion ? "학습의도있음" : "학습의도없음");
+                decision.route(),
+                decision.route().label(),
+                decision.reason(),
+                decision.reasonLabel());
     }
 
     private record AnswerResult(String answer, boolean cacheable, String cacheSkipReason) {
