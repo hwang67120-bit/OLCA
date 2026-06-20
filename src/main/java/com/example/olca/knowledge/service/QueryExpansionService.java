@@ -20,6 +20,16 @@ public class QueryExpansionService {
             expanded.append(" singleton pattern single instance global access shared instance application wide instance");
         }
 
+        /**
+         * Expand exception syntax questions before embedding.
+         * Input: Java exception terms that may be attached to Korean particles.
+         * Process: add official exception vocabulary for vector recall.
+         * Output: exception documents compete with package/class documents on the right topic.
+         */
+        if (containsAny(question, "예외", "예외처리", "try", "catch", "throw", "throws")) {
+            expanded.append(" java official exception exceptions try catch throw throws error handling checked exception runtime exception");
+        }
+
         return expanded.toString();
     }
 
