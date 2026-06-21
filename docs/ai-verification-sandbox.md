@@ -1,4 +1,4 @@
-# AI Verification Sandbox
+﻿# AI Verification Sandbox
 
 This document describes the first verification-sandbox step.
 
@@ -34,6 +34,16 @@ python3 scripts/dev/verification-evidence.py latest
 python3 scripts/dev/verification-evidence.py assert-pass
 ```
 
+## OLCA API
+
+```bash
+curl -X POST http://localhost:8080/api/verification/sandbox \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"all","repeat":4}'
+```
+
+`repeat` can be `1` to `4`. If any run fails, OLCA stops the sequence and
+returns the evidence collected so far.
 ## Flow
 
 ```text
