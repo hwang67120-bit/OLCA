@@ -1,4 +1,7 @@
 spring:
+  mvc:
+    async:
+      request-timeout: 10m
   application:
     name: OLCA
   datasource:

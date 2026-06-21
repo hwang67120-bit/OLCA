@@ -1,4 +1,4 @@
-﻿package com.example.olca.verification.service;
+package com.example.olca.verification.service;
 
 import com.example.olca.verification.dto.VerificationRunEvidence;
 import com.example.olca.verification.dto.VerificationSandboxRequest;
@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -62,14 +63,27 @@ public class VerificationSandboxService {
         Map<String, String> environment = processBuilder.environment();
         environment.put("VERIFY_RUN_ID", runId);
 
+        Process process;
         try {
-            Process process = processBuilder.start();
-            return process.waitFor();
+            process = processBuilder.start();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start verification sandbox script: " + script, e);
+        }
+
+        try {
+            return process.waitFor();
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Verification sandbox script was interrupted.", e);
+            try {
+                if (process.waitFor(10, TimeUnit.MINUTES)) {
+                    return process.exitValue();
+                }
+                process.destroyForcibly();
+                throw new IllegalStateException("Verification sandbox script did not finish after interruption.", e);
+            } catch (InterruptedException secondInterrupt) {
+                process.destroyForcibly();
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Verification sandbox script was interrupted.", secondInterrupt);
+            }
         }
     }
 

@@ -40,7 +40,7 @@ class VerificationEvidence:
 
     @classmethod
     def from_json(cls, path: Path) -> "VerificationEvidence":
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
         missing = [field for field in REQUIRED_FIELDS if field not in payload]
         if missing:
             raise ValueError(f"Invalid verification result. Missing: {', '.join(missing)}")
@@ -104,7 +104,7 @@ def latest_run_id(root: Path) -> str:
     latest_file = runs_dir(root) / "latest-run.txt"
     if not latest_file.exists():
         raise FileNotFoundError("No latest sandbox run found.")
-    run_id = latest_file.read_text(encoding="utf-8").strip()
+    run_id = latest_file.read_text(encoding="utf-8-sig").strip()
     if not run_id:
         raise ValueError("latest-run.txt is empty.")
     return run_id
