@@ -15,6 +15,10 @@ public final class KnowledgeSearchText {
             "자료", "내용", "자세히", "간단히",
             "the", "and", "for", "with", "about"
     );
+    private static final List<String> KOREAN_PARTICLES = List.of(
+            "이랑", "하고", "에서", "으로", "에게", "한테",
+            "랑", "로", "은", "는", "이", "가", "을", "를", "와", "과", "도"
+    );
 
     private KnowledgeSearchText() {
     }
@@ -31,6 +35,10 @@ public final class KnowledgeSearchText {
                 .replace("빌더", "빌더 builder")
                 .replace("팩토리", "팩토리 factory")
                 .replace("싱글톤", "싱글톤 singleton")
+                .replace("컬렉션", "컬렉션 collection collections")
+                .replace("리스트", "리스트 list")
+                .replace("맵", "맵 map")
+                .replace("중복 제거", "중복 제거 set unique")
                 .replace("예외처리", "예외처리 exception exceptions try catch throw throws")
                 .replace("예외", "예외 exception exceptions try catch throw throws")
                 .replace("throws", "throws throw exception exceptions 예외")
@@ -45,10 +53,36 @@ public final class KnowledgeSearchText {
 
         return Arrays.stream(normalizedQuestion.split("[^a-z0-9가-힣]+"))
                 .map(String::trim)
+                .flatMap(word -> keywordVariants(word).stream())
                 .filter(word -> word.length() >= 2)
                 .filter(word -> !STOP_WORDS.contains(word))
                 .distinct()
                 .toList();
+    }
+
+    private static List<String> keywordVariants(String word) {
+        String stripped = stripKoreanParticle(word);
+
+        if (stripped.equals(word)) {
+            return List.of(word);
+        }
+
+        return List.of(word, stripped);
+    }
+
+    private static String stripKoreanParticle(String word) {
+        if (word.length() <= 2) {
+            return word;
+        }
+
+        for (String particle : KOREAN_PARTICLES) {
+            int stemLength = word.length() - particle.length();
+            if (word.endsWith(particle) && stemLength >= 2) {
+                return word.substring(0, stemLength);
+            }
+        }
+
+        return word;
     }
 
     public static String documentText(KnowledgeBase knowledgeBase) {

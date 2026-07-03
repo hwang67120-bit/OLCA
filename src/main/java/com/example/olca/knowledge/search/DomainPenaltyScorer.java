@@ -35,10 +35,10 @@ public class DomainPenaltyScorer implements KnowledgeCandidateScorer {
         /**
          * Reject fake or unsupported pattern names.
          * Input: generic pattern wording without a known pattern keyword.
-         * Process: penalize design-pattern documents so vector similarity alone cannot pass.
+         * Process: penalize every candidate so vector similarity alone cannot pass.
          * Output: unknown pattern questions can return NONE instead of a plausible wrong pattern.
          */
-        if (documentIsDesignPattern && questionWantsDesignPattern && !questionHasKnownPattern) {
+        if (questionWantsDesignPattern && !questionHasKnownPattern) {
             return new CandidateScoreContribution(
                     0.0,
                     0.0,

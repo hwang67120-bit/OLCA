@@ -12,6 +12,9 @@ public class UsageIntentScorer implements KnowledgeCandidateScorer {
     private static final Set<String> USAGE_INTENT_TERMS = Set.of(
             "언제", "사용 시점", "사용시점", "쓸 때", "써", "쓰는", "쓰면", "좋아", "적합"
     );
+    private static final Set<String> KNOWN_PATTERN_TERMS = Set.of(
+            "builder", "factory", "singleton", "빌더", "팩토리", "싱글톤"
+    );
 
     @Override
     public CandidateScoreContribution score(KnowledgeCandidateContext context) {
@@ -24,7 +27,9 @@ public class UsageIntentScorer implements KnowledgeCandidateScorer {
          * Process: detect when/usage wording and check whether the topic is a usage document.
          * Output: "사용 시점" documents outrank generic concept summaries.
          */
-        if (!containsAny(question, USAGE_INTENT_TERMS) || !topic.contains("사용 시점")) {
+        if (!containsAny(question, USAGE_INTENT_TERMS)
+                || !containsAny(question, KNOWN_PATTERN_TERMS)
+                || !topic.contains("사용 시점")) {
             return CandidateScoreContribution.empty();
         }
 

@@ -3,141 +3,294 @@
     "id": "java-basic-001",
     "question": "자바 클래스와 객체 차이 알려줘",
     "expectedTop1": "Java Official - Classes and Objects",
-    "allowedTop3": ["Java Official - Classes and Objects"],
+    "allowedTop3": [
+      "Java Official - Classes and Objects"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-002",
     "question": "자바에서 객체는 뭐야?",
     "expectedTop1": "Java Official - Classes and Objects",
-    "allowedTop3": ["Java Official - Classes and Objects"],
+    "allowedTop3": [
+      "Java Official - Classes and Objects"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-003",
     "question": "클래스는 왜 쓰는 거야?",
     "expectedTop1": "Java Official - Classes and Objects",
-    "allowedTop3": ["Java Official - Classes and Objects"],
+    "allowedTop3": [
+      "Java Official - Classes and Objects"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-004",
     "question": "자바 인터페이스는 언제 써?",
     "expectedTop1": "Java Official - Interfaces",
-    "allowedTop3": ["Java Official - Interfaces"],
+    "allowedTop3": [
+      "Java Official - Interfaces"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-005",
     "question": "인터페이스와 구현체 관계 알려줘",
     "expectedTop1": "Java Official - Interfaces",
-    "allowedTop3": ["Java Official - Interfaces"],
+    "allowedTop3": [
+      "Java Official - Interfaces"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-006",
     "question": "API 계약을 자바에서 어떻게 표현해?",
     "expectedTop1": "Java Official - Interfaces",
-    "allowedTop3": ["Java Official - Interfaces"],
+    "allowedTop3": [
+      "Java Official - Interfaces"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-007",
     "question": "자바 상속은 언제 쓰는 게 좋아?",
     "expectedTop1": "Java Official - Inheritance",
-    "allowedTop3": ["Java Official - Inheritance"],
+    "allowedTop3": [
+      "Java Official - Inheritance"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-008",
     "question": "부모 클래스와 자식 클래스 관계 설명해줘",
     "expectedTop1": "Java Official - Inheritance",
-    "allowedTop3": ["Java Official - Inheritance"],
+    "allowedTop3": [
+      "Java Official - Inheritance"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-009",
     "question": "메서드 오버라이딩은 상속이랑 무슨 관련이 있어?",
     "expectedTop1": "Java Official - Inheritance",
-    "allowedTop3": ["Java Official - Inheritance"],
+    "allowedTop3": [
+      "Java Official - Inheritance"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-010",
     "question": "자바 패키지는 왜 나눠?",
     "expectedTop1": "Java Official - Packages",
-    "allowedTop3": ["Java Official - Packages"],
+    "allowedTop3": [
+      "Java Official - Packages"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-011",
     "question": "import 문은 왜 필요해?",
     "expectedTop1": "Java Official - Packages",
-    "allowedTop3": ["Java Official - Packages"],
+    "allowedTop3": [
+      "Java Official - Packages"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-012",
     "question": "패키지가 이름 충돌을 줄여준다는 게 무슨 말이야?",
     "expectedTop1": "Java Official - Packages",
-    "allowedTop3": ["Java Official - Packages"],
+    "allowedTop3": [
+      "Java Official - Packages"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-013",
     "question": "자바 예외 처리는 왜 필요해?",
     "expectedTop1": "Java Official - Exceptions",
-    "allowedTop3": ["Java Official - Exceptions"],
+    "allowedTop3": [
+      "Java Official - Exceptions"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-014",
     "question": "try catch는 언제 써?",
     "expectedTop1": "Java Official - Exceptions",
-    "allowedTop3": ["Java Official - Exceptions"],
+    "allowedTop3": [
+      "Java Official - Exceptions"
+    ],
     "type": "java-basic"
   },
   {
     "id": "java-basic-015",
     "question": "throw와 throws는 예외 처리랑 관련 있어?",
     "expectedTop1": "Java Official - Exceptions",
-    "allowedTop3": ["Java Official - Exceptions"],
+    "allowedTop3": [
+      "Java Official - Exceptions"
+    ],
     "type": "java-basic"
   },
   {
     "id": "design-pattern-001",
     "question": "빌더 패턴은 언제 써?",
     "expectedTop1": "Builder Pattern - 사용 시점",
-    "allowedTop3": ["Builder Pattern - 사용 시점", "Builder Pattern", "Builder vs Factory vs Singleton"],
+    "allowedTop3": [
+      "Builder Pattern - 사용 시점",
+      "Builder Pattern",
+      "Builder vs Factory vs Singleton"
+    ],
     "type": "design-pattern"
   },
   {
     "id": "design-pattern-002",
     "question": "팩토리 패턴은 언제 쓰는 게 좋아?",
     "expectedTop1": "Factory Pattern - 사용 시점",
-    "allowedTop3": ["Factory Pattern - 사용 시점", "Factory Pattern", "Builder vs Factory vs Singleton"],
+    "allowedTop3": [
+      "Factory Pattern - 사용 시점",
+      "Factory Pattern",
+      "Builder vs Factory vs Singleton"
+    ],
     "type": "design-pattern"
   },
   {
     "id": "design-pattern-003",
     "question": "싱글톤 패턴은 언제 써?",
     "expectedTop1": "Singleton Pattern - 사용 시점",
-    "allowedTop3": ["Singleton Pattern - 사용 시점", "Singleton Pattern", "Builder vs Factory vs Singleton"],
+    "allowedTop3": [
+      "Singleton Pattern - 사용 시점",
+      "Singleton Pattern",
+      "Builder vs Factory vs Singleton"
+    ],
     "type": "design-pattern"
   },
   {
     "id": "unknown-001",
     "question": "스트림 고블린 패턴 알려줘",
     "expectedTop1": "NONE",
-    "allowedTop3": ["NONE"],
+    "allowedTop3": [
+      "NONE"
+    ],
     "type": "unknown"
   },
   {
     "id": "unknown-002",
     "question": "커피 추출 온도 알려줘",
     "expectedTop1": "NONE",
-    "allowedTop3": ["NONE"],
+    "allowedTop3": [
+      "NONE"
+    ],
     "type": "unknown"
+  },
+  {
+    "id": "java-collection-001",
+    "question": "자바 Collection 인터페이스는 뭐야?",
+    "expectedTop1": "Java Official - Collection Interface",
+    "allowedTop3": [
+      "Java Official - Collection Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-collection-002",
+    "question": "컬렉션을 순회할 때 Iterator랑 for-each는 어디서 나와?",
+    "expectedTop1": "Java Official - Collection Interface",
+    "allowedTop3": [
+      "Java Official - Collection Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-collection-003",
+    "question": "Collection에서 add remove contains 같은 기본 연산 설명해줘",
+    "expectedTop1": "Java Official - Collection Interface",
+    "allowedTop3": [
+      "Java Official - Collection Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-list-001",
+    "question": "자바 List는 언제 써?",
+    "expectedTop1": "Java Official - List Interface",
+    "allowedTop3": [
+      "Java Official - List Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-list-002",
+    "question": "순서가 있고 중복을 허용하는 자료구조는 뭐야?",
+    "expectedTop1": "Java Official - List Interface",
+    "allowedTop3": [
+      "Java Official - List Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-list-003",
+    "question": "ArrayList와 LinkedList는 List 구현체야?",
+    "expectedTop1": "Java Official - List Interface",
+    "allowedTop3": [
+      "Java Official - List Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-set-001",
+    "question": "자바 Set은 언제 써?",
+    "expectedTop1": "Java Official - Set Interface",
+    "allowedTop3": [
+      "Java Official - Set Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-set-002",
+    "question": "중복 제거가 필요하면 어떤 컬렉션을 써?",
+    "expectedTop1": "Java Official - Set Interface",
+    "allowedTop3": [
+      "Java Official - Set Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-set-003",
+    "question": "HashSet TreeSet LinkedHashSet 차이 알려줘",
+    "expectedTop1": "Java Official - Set Interface",
+    "allowedTop3": [
+      "Java Official - Set Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-map-001",
+    "question": "자바 Map은 언제 써?",
+    "expectedTop1": "Java Official - Map Interface",
+    "allowedTop3": [
+      "Java Official - Map Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-map-002",
+    "question": "key value로 데이터를 저장하려면 뭐 써?",
+    "expectedTop1": "Java Official - Map Interface",
+    "allowedTop3": [
+      "Java Official - Map Interface"
+    ],
+    "type": "java-collection"
+  },
+  {
+    "id": "java-map-003",
+    "question": "HashMap TreeMap LinkedHashMap 차이 알려줘",
+    "expectedTop1": "Java Official - Map Interface",
+    "allowedTop3": [
+      "Java Official - Map Interface"
+    ],
+    "type": "java-collection"
   }
 ]
-
