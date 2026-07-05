@@ -19,6 +19,9 @@ public final class KnowledgeSearchText {
             "이랑", "하고", "에서", "으로", "에게", "한테",
             "랑", "로", "은", "는", "이", "가", "을", "를", "와", "과", "도"
     );
+    private static final Set<String> COMMON_TOPIC_TERMS = Set.of(
+            "java", "자바", "official", "oracle", "docs", "문서"
+    );
 
     private KnowledgeSearchText() {
     }
@@ -102,6 +105,12 @@ public final class KnowledgeSearchText {
         return queryKeywords.stream()
                 .filter(normalizedDocumentText::contains)
                 .distinct()
+                .toList();
+    }
+
+    public static List<String> intentKeywords(List<String> matchedKeywords) {
+        return matchedKeywords.stream()
+                .filter(keyword -> !COMMON_TOPIC_TERMS.contains(keyword))
                 .toList();
     }
 }

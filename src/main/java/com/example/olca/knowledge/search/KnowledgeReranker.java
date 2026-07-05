@@ -45,7 +45,8 @@ public class KnowledgeReranker {
         double vectorScore = cosineSimilarity(document.getEmbedding(), questionVector);
         String normalizedDocumentText = KnowledgeSearchText.documentText(document);
         List<String> matchedKeywords = KnowledgeSearchText.matchedKeywords(queryKeywords, normalizedDocumentText);
-        boolean topicPass = !matchedKeywords.isEmpty();
+        List<String> intentKeywords = KnowledgeSearchText.intentKeywords(matchedKeywords);
+        boolean topicPass = !intentKeywords.isEmpty();
 
         KnowledgeCandidateContext context = new KnowledgeCandidateContext(
                 question,
@@ -63,7 +64,7 @@ public class KnowledgeReranker {
         List<String> reasons = new ArrayList<>();
 
         if (topicPass) {
-            reasons.add("topic_pass");
+            reasons.add("topic_pass:" + intentKeywords);
         }
 
         for (KnowledgeCandidateScorer scorer : scorers) {

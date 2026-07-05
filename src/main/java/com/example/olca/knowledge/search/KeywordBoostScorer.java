@@ -13,20 +13,21 @@ public class KeywordBoostScorer implements KnowledgeCandidateScorer {
 
     @Override
     public CandidateScoreContribution score(KnowledgeCandidateContext context) {
-        if (context.matchedKeywords().isEmpty()) {
+        List<String> intentKeywords = KnowledgeSearchText.intentKeywords(context.matchedKeywords());
+        if (intentKeywords.isEmpty()) {
             return CandidateScoreContribution.empty();
         }
 
         String normalizedTopic = KnowledgeSearchText.normalize(context.knowledgeBase().getTopic());
-        long topicMatches = context.matchedKeywords().stream()
+        long topicMatches = intentKeywords.stream()
                 .filter(normalizedTopic::contains)
                 .count();
 
-        double keywordScore = context.matchedKeywords().size() * MATCHED_KEYWORD_WEIGHT;
+        double keywordScore = intentKeywords.size() * MATCHED_KEYWORD_WEIGHT;
         double topicScore = topicMatches * TOPIC_KEYWORD_WEIGHT;
 
         List<String> reasons = new ArrayList<>();
-        reasons.add("keyword_match:" + context.matchedKeywords());
+        reasons.add("keyword_match:" + intentKeywords);
         if (topicMatches > 0) {
             reasons.add("topic_keyword_match:" + topicMatches);
         }
