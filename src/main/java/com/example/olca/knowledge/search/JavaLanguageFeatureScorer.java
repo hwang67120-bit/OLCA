@@ -28,6 +28,9 @@ public class JavaLanguageFeatureScorer implements KnowledgeCandidateScorer {
     @Override
     public CandidateScoreContribution score(KnowledgeCandidateContext context) {
         String question = KnowledgeSearchText.normalize(context.question());
+        if (isUnknownPatternQuestion(question)) {
+            return CandidateScoreContribution.empty();
+        }
         String topic = KnowledgeSearchText.normalize(context.knowledgeBase().getTopic());
 
         if (matchesGenerics(question, topic)) {
@@ -62,10 +65,10 @@ public class JavaLanguageFeatureScorer implements KnowledgeCandidateScorer {
         }
 
         boolean hasExplicitStream = containsAny(question, Set.of("stream", "스트림", "pipeline", "파이프라인", "중간", "최종"));
-        boolean hasStreamOperationPair = containsAny(question, Set.of("filter", "collect"))
-                || (question.contains("map") && containsAny(question, Set.of("filter", "collect")));
+        boolean hasStreamOperationToken = hasToken(question, "filter") || hasToken(question, "collect")
+                || (hasToken(question, "map") && (hasToken(question, "filter") || hasToken(question, "collect")));
 
-        return hasExplicitStream || hasStreamOperationPair;
+        return hasExplicitStream || hasStreamOperationToken;
     }
 
     private boolean matches(String question, String topic, Set<String> terms, String topicMarker) {
@@ -80,6 +83,21 @@ public class JavaLanguageFeatureScorer implements KnowledgeCandidateScorer {
                 0.0,
                 List.of(reason)
         );
+    }
+
+    private boolean isUnknownPatternQuestion(String question) {
+        boolean wantsPattern = containsAny(question, Set.of("pattern", "패턴"));
+        boolean knownPattern = containsAny(question, Set.of("builder", "factory", "singleton", "빌더", "팩토리", "싱글톤"));
+        return wantsPattern && !knownPattern;
+    }
+
+    private boolean hasToken(String text, String token) {
+        for (String word : text.split("[^a-z0-9가-힣]+")) {
+            if (word.equals(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsAny(String text, Set<String> terms) {

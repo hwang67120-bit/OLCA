@@ -284,14 +284,19 @@ Response: { answer, sources }
 - [x] 확장 직후 top1 실패 케이스 분석
 - [x] `List<String>` 제네릭 문맥과 `List Interface` 문맥 분리
 - [x] Stream `map` 연산과 `Map Interface` 문맥 분리
+- [x] KnowledgeBase metadata 도입 (`sourceType`, `sourceUrl`, `domain`, `category`, `topicKey`)
+- [x] metadata context scorer 추가
+- [x] metadata 도입 후 `collection`/`collect` 부분 문자열 오인 문제 수정
 - [x] 최종 RAG 평가 `top1_pass=47/47`, `top3_pass=47/47` 확인
 
 ### 후속 개선 과제
-- [ ] KnowledgeBase metadata 도입 (`sourceType`, `sourceUrl`, `domain`, `topicKey`)
-- [ ] 공식 문서, 개인 노트, 실험용 데이터 분리
+- [ ] 공식 문서, 개인 노트, 실험용 데이터 분리 정책 강화
 - [ ] 문자열 기반 scorer를 metadata 기반 reranking으로 점진적 전환
 - [ ] Query expansion ON/OFF 결과를 검증 리포트에 함께 기록
 - [ ] 평가셋 확장 시 top1/top3 변화 추적 자동화
+## 추가 트러블슈팅 기록
+
+- [RAG metadata context troubleshooting](docs/troubleshooting/rag-metadata-context.md)
 
 ## 🔗 연동
 

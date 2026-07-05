@@ -62,7 +62,8 @@ public class KnowledgeBaseController {
         return knowledgeBaseService.saveWithEmbedding(
                 request.topic(),
                 request.content(),
-                request.keywords()
+                request.keywords(),
+                request.metadata()
         );
     }
 

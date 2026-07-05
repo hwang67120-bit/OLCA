@@ -28,17 +28,20 @@ public class KnowledgeBase {
 
     private List<Double> embedding;
 
+    private KnowledgeMetadata metadata;
+
     private Integer version;
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @Builder
-    public KnowledgeBase(String topic, String content, List<String> keywords, List<Double> embedding, Integer version) {
+    public KnowledgeBase(String topic, String content, List<String> keywords, List<Double> embedding, KnowledgeMetadata metadata, Integer version) {
         this.topic = topic;
         this.content = content;
         this.keywords = keywords;
         this.embedding = embedding;
+        this.metadata = metadata == null ? KnowledgeMetadata.empty() : metadata;
         this.version = version != null ? version : 1;
     }
 
@@ -48,6 +51,7 @@ public class KnowledgeBase {
                 knowledgeBase.getTopic(),
                 knowledgeBase.getContent(),
                 knowledgeBase.getKeywords(),
+                knowledgeBase.getMetadata(),
                 knowledgeBase.getVersion(),
                 knowledgeBase.getCreatedAt()
 

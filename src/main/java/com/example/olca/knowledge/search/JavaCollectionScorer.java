@@ -61,10 +61,10 @@ public class JavaCollectionScorer implements KnowledgeCandidateScorer {
 
     private boolean isStreamOperationQuestion(String question) {
         boolean hasExplicitStream = containsAny(question, Set.of("stream", "스트림", "pipeline", "파이프라인", "중간", "최종"));
-        boolean hasStreamOperationPair = containsAny(question, Set.of("filter", "collect"))
-                || (question.contains("map") && containsAny(question, Set.of("filter", "collect")));
+        boolean hasStreamOperationToken = hasToken(question, "filter") || hasToken(question, "collect")
+                || (hasToken(question, "map") && (hasToken(question, "filter") || hasToken(question, "collect")));
 
-        return hasExplicitStream || hasStreamOperationPair;
+        return hasExplicitStream || hasStreamOperationToken;
     }
 
     private boolean matches(String question, String topic, Set<String> terms, String topicMarker) {
@@ -79,6 +79,15 @@ public class JavaCollectionScorer implements KnowledgeCandidateScorer {
                 0.0,
                 List.of(reason)
         );
+    }
+
+    private boolean hasToken(String text, String token) {
+        for (String word : text.split("[^a-z0-9가-힣]+")) {
+            if (word.equals(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsAny(String text, Set<String> terms) {

@@ -36,7 +36,8 @@ public class KnowledgeImportService {
                     return knowledgeBaseService.saveWithEmbedding(
                             topic,
                             chunk,
-                            safekeywords
+                            safekeywords,
+                            request.metadata()
                     );
 
                 })
