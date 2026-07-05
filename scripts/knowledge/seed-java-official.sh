@@ -61,3 +61,28 @@ post_knowledge \
   "Java Official - Map Interface" \
   '["java","official","collection","map","hashmap","treemap","linkedhashmap","key","value","entry","맵","키","값","oracle"]' \
   '"출처: Oracle Java Tutorials - The Map Interface. URL: https://docs.oracle.com/javase/tutorial/collections/interfaces/map.html\n\nJava에서 Map은 key와 value를 연결하는 객체다. 하나의 key는 최대 하나의 value에 매핑되며, 중복 key를 가질 수 없다. 기본 연산으로 put, get, remove, containsKey, containsValue, size, isEmpty 등을 제공한다. 대표 구현체로 HashMap, TreeMap, LinkedHashMap이 있으며, HashMap은 일반적인 빠른 조회에 많이 쓰이고 TreeMap은 key 정렬이 필요할 때, LinkedHashMap은 입력 순서 유지가 필요할 때 고려할 수 있다."'
+
+post_knowledge \
+  "Java Official - Generics" \
+  '["java","official","generics","generic","type parameter","type safety","제네릭","타입파라미터","타입안전성","oracle"]' \
+  '"출처: Oracle Java Tutorials - Generics. URL: https://docs.oracle.com/javase/tutorial/java/generics/index.html\n\nJava에서 Generics는 클래스, 인터페이스, 메서드를 특정 타입에 고정하지 않고 타입 파라미터로 작성할 수 있게 해주는 기능이다. 제네릭을 사용하면 컴파일 시점에 타입 안정성을 확인할 수 있고, 불필요한 형변환을 줄일 수 있다. List<String>처럼 컬렉션에 들어갈 요소 타입을 명시하면 잘못된 타입의 값이 들어가는 문제를 미리 막을 수 있다. 제네릭은 재사용 가능한 API를 만들면서도 타입 안정성을 유지할 때 중요하다."'
+
+post_knowledge \
+  "Java Official - Enum Types" \
+  '["java","official","enum","enums","enum type","constant","열거형","상수","oracle"]' \
+  '"출처: Oracle Java Tutorials - Enum Types. URL: https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html\n\nJava에서 enum type은 고정된 상수 집합을 표현하기 위한 특수한 클래스다. 요일, 방향, 상태값처럼 가능한 값의 범위가 정해져 있을 때 enum을 사용하면 문자열이나 숫자 상수보다 타입 안정성이 좋아진다. enum 상수는 자기 자신의 타입을 가지며, switch 문이나 조건 분기에서 명확한 상태 표현에 활용할 수 있다. 값의 종류가 제한된 도메인 상태를 표현할 때 enum은 코드의 의도를 분명하게 만든다."'
+
+post_knowledge \
+  "Java Official - Annotations" \
+  '["java","official","annotation","annotations","metadata","어노테이션","애너테이션","메타데이터","oracle"]' \
+  '"출처: Oracle Java Tutorials - Annotations. URL: https://docs.oracle.com/javase/tutorial/java/annotations/index.html\n\nJava에서 annotation은 코드에 메타데이터를 붙이는 문법이다. annotation은 컴파일러 정보 제공, 빌드나 배포 도구 처리, 런타임 리플렉션 기반 처리에 사용할 수 있다. @Override처럼 컴파일러 검증을 돕는 용도도 있고, 프레임워크가 클래스나 메서드의 의미를 읽기 위해 사용하는 경우도 있다. annotation은 실행 로직 자체라기보다 코드에 추가 정보를 제공하는 구조다."'
+
+post_knowledge \
+  "Java Official - Lambda Expressions" \
+  '["java","official","lambda","lambda expression","functional interface","람다","람다식","함수형인터페이스","oracle"]' \
+  '"출처: Oracle Java Tutorials - Lambda Expressions. URL: https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html\n\nJava에서 lambda expression은 메서드처럼 동작하는 코드를 간결하게 전달하기 위한 표현식이다. 람다는 함수형 인터페이스의 추상 메서드 구현으로 사용되며, 익명 클래스보다 짧고 읽기 쉬운 코드를 만들 수 있다. 컬렉션 처리, 이벤트 처리, stream 연산처럼 동작을 값처럼 넘겨야 하는 상황에서 자주 사용된다. 람다를 이해하려면 대상 타입이 되는 functional interface 개념도 함께 알아야 한다."'
+
+post_knowledge \
+  "Java Official - Stream Aggregate Operations" \
+  '["java","official","stream","streams","aggregate operations","pipeline","filter","map","collect","스트림","파이프라인","중간연산","최종연산","oracle"]' \
+  '"출처: Oracle Java Tutorials - Aggregate Operations. URL: https://docs.oracle.com/javase/tutorial/collections/streams/index.html\n\nJava Stream은 컬렉션 같은 데이터 소스를 선언적으로 처리하기 위한 흐름이다. stream pipeline은 source, intermediate operation, terminal operation으로 구성된다. filter, map 같은 중간 연산은 새 stream을 만들고, collect, forEach, reduce 같은 최종 연산은 결과를 만들거나 동작을 수행한다. Stream은 반복문을 직접 작성하기보다 데이터 처리 의도를 표현하고 싶을 때 유용하지만, 원본 컬렉션 자체를 저장 구조처럼 대체하는 것은 아니다."'

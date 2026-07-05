@@ -21,11 +21,21 @@ public class JavaCollectionScorer implements KnowledgeCandidateScorer {
     private static final Set<String> COLLECTION_TERMS = Set.of(
             "collection", "collections", "컬렉션", "iterator", "순회", "add", "remove", "contains"
     );
+    private static final Set<String> GENERICS_CONTEXT_TERMS = Set.of(
+            "generics", "generic", "제네릭", "타입 파라미터", "타입파라미터", "타입 안정성", "타입안정성"
+    );
+    private static final Set<String> STREAM_OPERATION_TERMS = Set.of(
+            "stream", "streams", "스트림", "filter", "map", "collect", "pipeline", "파이프라인", "중간 연산", "최종 연산", "중간연산", "최종연산"
+    );
 
     @Override
     public CandidateScoreContribution score(KnowledgeCandidateContext context) {
         String question = KnowledgeSearchText.normalize(context.question());
         String topic = KnowledgeSearchText.normalize(context.knowledgeBase().getTopic());
+
+        if (isGenericTypeQuestion(question) || isStreamOperationQuestion(question)) {
+            return CandidateScoreContribution.empty();
+        }
 
         if (matches(question, topic, LIST_TERMS, "list interface")) {
             return boost("java_collection:list");
@@ -41,6 +51,20 @@ public class JavaCollectionScorer implements KnowledgeCandidateScorer {
         }
 
         return CandidateScoreContribution.empty();
+    }
+
+    private boolean isGenericTypeQuestion(String question) {
+        return containsAny(question, GENERICS_CONTEXT_TERMS)
+                || question.contains("<")
+                || (question.contains("타입") && containsAny(question, Set.of("붙이는", "붙이", "명시")));
+    }
+
+    private boolean isStreamOperationQuestion(String question) {
+        boolean hasExplicitStream = containsAny(question, Set.of("stream", "스트림", "pipeline", "파이프라인", "중간", "최종"));
+        boolean hasStreamOperationPair = containsAny(question, Set.of("filter", "collect"))
+                || (question.contains("map") && containsAny(question, Set.of("filter", "collect")));
+
+        return hasExplicitStream || hasStreamOperationPair;
     }
 
     private boolean matches(String question, String topic, Set<String> terms, String topicMarker) {

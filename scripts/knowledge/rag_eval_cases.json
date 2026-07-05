@@ -292,5 +292,140 @@
       "Java Official - Map Interface"
     ],
     "type": "java-collection"
+  },
+  {
+    "id": "java-generics-001",
+    "question": "자바 제네릭은 왜 써?",
+    "expectedTop1": "Java Official - Generics",
+    "allowedTop3": [
+      "Java Official - Generics"
+    ],
+    "type": "java-generics"
+  },
+  {
+    "id": "java-generics-002",
+    "question": "List<String>처럼 타입을 붙이는 이유가 뭐야?",
+    "expectedTop1": "Java Official - Generics",
+    "allowedTop3": [
+      "Java Official - Generics"
+    ],
+    "type": "java-generics"
+  },
+  {
+    "id": "java-generics-003",
+    "question": "제네릭이 타입 안정성을 높인다는 게 무슨 말이야?",
+    "expectedTop1": "Java Official - Generics",
+    "allowedTop3": [
+      "Java Official - Generics"
+    ],
+    "type": "java-generics"
+  },
+  {
+    "id": "java-enum-001",
+    "question": "자바 enum은 언제 써?",
+    "expectedTop1": "Java Official - Enum Types",
+    "allowedTop3": [
+      "Java Official - Enum Types"
+    ],
+    "type": "java-enum"
+  },
+  {
+    "id": "java-enum-002",
+    "question": "상태값이 정해져 있을 때 열거형을 쓰는 이유가 뭐야?",
+    "expectedTop1": "Java Official - Enum Types",
+    "allowedTop3": [
+      "Java Official - Enum Types"
+    ],
+    "type": "java-enum"
+  },
+  {
+    "id": "java-enum-003",
+    "question": "문자열 상수 대신 enum을 쓰면 뭐가 좋아?",
+    "expectedTop1": "Java Official - Enum Types",
+    "allowedTop3": [
+      "Java Official - Enum Types"
+    ],
+    "type": "java-enum"
+  },
+  {
+    "id": "java-annotation-001",
+    "question": "자바 어노테이션은 뭐야?",
+    "expectedTop1": "Java Official - Annotations",
+    "allowedTop3": [
+      "Java Official - Annotations"
+    ],
+    "type": "java-annotation"
+  },
+  {
+    "id": "java-annotation-002",
+    "question": "@Override 같은 애너테이션은 왜 붙여?",
+    "expectedTop1": "Java Official - Annotations",
+    "allowedTop3": [
+      "Java Official - Annotations"
+    ],
+    "type": "java-annotation"
+  },
+  {
+    "id": "java-annotation-003",
+    "question": "어노테이션이 메타데이터라는 게 무슨 뜻이야?",
+    "expectedTop1": "Java Official - Annotations",
+    "allowedTop3": [
+      "Java Official - Annotations"
+    ],
+    "type": "java-annotation"
+  },
+  {
+    "id": "java-lambda-001",
+    "question": "자바 람다식은 언제 써?",
+    "expectedTop1": "Java Official - Lambda Expressions",
+    "allowedTop3": [
+      "Java Official - Lambda Expressions"
+    ],
+    "type": "java-lambda"
+  },
+  {
+    "id": "java-lambda-002",
+    "question": "람다와 함수형 인터페이스 관계 알려줘",
+    "expectedTop1": "Java Official - Lambda Expressions",
+    "allowedTop3": [
+      "Java Official - Lambda Expressions"
+    ],
+    "type": "java-lambda"
+  },
+  {
+    "id": "java-lambda-003",
+    "question": "익명 클래스 대신 람다를 쓰는 이유가 뭐야?",
+    "expectedTop1": "Java Official - Lambda Expressions",
+    "allowedTop3": [
+      "Java Official - Lambda Expressions"
+    ],
+    "type": "java-lambda"
+  },
+  {
+    "id": "java-stream-001",
+    "question": "자바 Stream은 언제 써?",
+    "expectedTop1": "Java Official - Stream Aggregate Operations",
+    "allowedTop3": [
+      "Java Official - Stream Aggregate Operations"
+    ],
+    "type": "java-stream"
+  },
+  {
+    "id": "java-stream-002",
+    "question": "filter map collect는 스트림에서 어떤 역할이야?",
+    "expectedTop1": "Java Official - Stream Aggregate Operations",
+    "allowedTop3": [
+      "Java Official - Stream Aggregate Operations"
+    ],
+    "type": "java-stream"
+  },
+  {
+    "id": "java-stream-003",
+    "question": "스트림 파이프라인에서 중간 연산과 최종 연산 차이 알려줘",
+    "expectedTop1": "Java Official - Stream Aggregate Operations",
+    "allowedTop3": [
+      "Java Official - Stream Aggregate Operations"
+    ],
+    "type": "java-stream"
   }
 ]
