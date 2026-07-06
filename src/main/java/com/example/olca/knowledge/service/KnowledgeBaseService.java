@@ -1,9 +1,13 @@
 package com.example.olca.knowledge.service;
 
-
 import com.example.olca.ai.service.EmbeddingService;
+import com.example.olca.global.trace.TraceLog;
 import com.example.olca.knowledge.domain.KnowledgeBase;
+import com.example.olca.knowledge.domain.KnowledgeMetadata;
+import com.example.olca.knowledge.dto.response.KnowledgeVectorSearchResponse;
 import com.example.olca.knowledge.repository.KnowledgeBaseRepository;
+import com.example.olca.knowledge.search.KnowledgeReranker;
+import com.example.olca.knowledge.search.KnowledgeSearchCandidate;
 import com.example.olca.session.dto.response.KnowledgeBaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +18,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,12 +27,32 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class KnowledgeBaseService {
 
+    private static final double MIN_VECTOR_SIMILARITY = 0.85;
+
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final EmbeddingService embeddingService;
+    private final QueryExpansionService queryExpansionService;
+    private final KnowledgeReranker knowledgeReranker;
 
-    // ✅ 문서 저장 + 임베딩 자동 생성
     @Transactional
-    public Mono<KnowledgeBaseResponse> saveWithEmbedding(String topic, String content, List<String> keywords) {
+    public Mono<KnowledgeBaseResponse> saveWithEmbedding(
+            String topic,
+            String content,
+            List<String> keywords
+    ) {
+        return saveWithEmbedding(topic, content, keywords, KnowledgeMetadata.empty());
+    }
+
+    @Transactional
+    public Mono<KnowledgeBaseResponse> saveWithEmbedding(
+            String topic,
+            String content,
+            List<String> keywords,
+            KnowledgeMetadata metadata
+    ) {
+        List<String> safeKeywords = keywords == null ? List.of() : keywords;
+        KnowledgeMetadata safeMetadata = metadata == null ? KnowledgeMetadata.empty() : metadata;
+
         return Mono.fromCallable(() ->
                         embeddingService.embed(topic + " " + content)
                 )
@@ -37,8 +63,9 @@ public class KnowledgeBaseService {
                                     KnowledgeBase newVersion = KnowledgeBase.builder()
                                             .topic(topic)
                                             .content(content)
-                                            .keywords(keywords)
+                                            .keywords(safeKeywords)
                                             .embedding(embedding)
+                                            .metadata(safeMetadata)
                                             .version(existing.getVersion() + 1)
                                             .build();
                                     return knowledgeBaseRepository.save(newVersion);
@@ -47,8 +74,9 @@ public class KnowledgeBaseService {
                                     KnowledgeBase newKb = KnowledgeBase.builder()
                                             .topic(topic)
                                             .content(content)
-                                            .keywords(keywords)
+                                            .keywords(safeKeywords)
                                             .embedding(embedding)
+                                            .metadata(safeMetadata)
                                             .version(1)
                                             .build();
                                     return knowledgeBaseRepository.save(newKb);
@@ -57,47 +85,35 @@ public class KnowledgeBaseService {
                 .map(KnowledgeBaseResponse::from);
     }
 
-    // ✅ 벡터 유사도 검색
+    @TraceLog("KnowledgeBaseService.vectorSearch")
     public Mono<List<KnowledgeBase>> vectorSearch(String question, int topN) {
-        return Mono.fromCallable(() ->
-                        embeddingService.embed(question)
-                )
+        return Mono.fromCallable(() -> {
+                    String expandedQuestion = queryExpansionService.expand(question);
+                    log.info("[VECTOR_SEARCH] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
+                    return embeddingService.embed(expandedQuestion);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(questionVector ->
                         knowledgeBaseRepository.findAll()
                                 .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
-                                .sort((a, b) -> Double.compare(
-                                        cosineSimilarity(b.getEmbedding(), questionVector),
-                                        cosineSimilarity(a.getEmbedding(), questionVector)
-                                ))
-                                .take(topN)
                                 .collectList()
+                                .map(all -> {
+                                    List<KnowledgeBase> latestDocuments = latestDocuments(all);
+
+                                    return knowledgeReranker.rank(question, questionVector, latestDocuments, topN)
+                                            .stream()
+                                            .map(KnowledgeSearchCandidate::knowledgeBase)
+                                            .toList();
+                                })
                 )
                 .doOnSuccess(results ->
-                        log.info("🔍 벡터 검색 결과: {}건", results.size())
+                        log.info("[VECTOR_SEARCH] minSimilarity={} resultCount={} topics={}",
+                                MIN_VECTOR_SIMILARITY,
+                                results.size(),
+                                results.stream().map(KnowledgeBase::getTopic).toList())
                 );
     }
 
-    // ✅ 코사인 유사도 계산
-    private double cosineSimilarity(List<Double> vectorA, List<Double> vectorB) {
-        if (vectorA.size() != vectorB.size()) return 0.0;
-
-        double dotProduct = 0.0;
-        double normA = 0.0;
-        double normB = 0.0;
-
-        for (int i = 0; i < vectorA.size(); i++) {
-            dotProduct += vectorA.get(i) * vectorB.get(i);
-            normA += Math.pow(vectorA.get(i), 2);
-            normB += Math.pow(vectorB.get(i), 2);
-        }
-
-        if (normA == 0.0 || normB == 0.0) return 0.0;
-
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-    }
-
-    // 기존 메서드들 유지
     @Transactional
     public Mono<KnowledgeBaseResponse> createOrUpdate(String topic, String content, List<String> keywords) {
         return knowledgeBaseRepository.findLatestByTopic(topic)
@@ -106,6 +122,7 @@ public class KnowledgeBaseService {
                             .topic(topic)
                             .content(content)
                             .keywords(keywords)
+                            .metadata(KnowledgeMetadata.empty())
                             .version(existing.getVersion() + 1)
                             .build();
                     return knowledgeBaseRepository.save(newVersion);
@@ -115,11 +132,51 @@ public class KnowledgeBaseService {
                             .topic(topic)
                             .content(content)
                             .keywords(keywords)
+                            .metadata(KnowledgeMetadata.empty())
                             .version(1)
                             .build();
                     return knowledgeBaseRepository.save(newKb);
                 }))
                 .map(KnowledgeBaseResponse::from);
+    }
+
+    @TraceLog("KnowledgeBaseService.vectorSearchWithScore")
+    public Mono<List<KnowledgeVectorSearchResponse>> vectorSearchWithScore(String question, int topN) {
+        return Mono.fromCallable(() -> {
+                    String expandedQuestion = queryExpansionService.expand(question);
+                    log.info("[VECTOR_SEARCH_DEBUG] expandedQuestionLength={} topN={}", expandedQuestion.length(), topN);
+                    return embeddingService.embed(expandedQuestion);
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(questionVector ->
+                        knowledgeBaseRepository.findAll()
+                                .filter(kb -> kb.getEmbedding() != null && !kb.getEmbedding().isEmpty())
+                                .collectList()
+                                .map(all -> {
+                                    List<KnowledgeBase> latestDocuments = latestDocuments(all);
+
+                                    return knowledgeReranker.rank(question, questionVector, latestDocuments, topN)
+                                            .stream()
+                                            .map(candidate -> new KnowledgeVectorSearchResponse(
+                                                    candidate.knowledgeBase().getId(),
+                                                    candidate.knowledgeBase().getTopic(),
+                                                    candidate.knowledgeBase().getContent(),
+                                                    candidate.knowledgeBase().getKeywords(),
+                                                    candidate.knowledgeBase().getMetadata(),
+                                                    candidate.knowledgeBase().getVersion(),
+                                                    candidate.vectorScore(),
+                                                    candidate.finalScore(),
+                                                    candidate.matchedKeywords(),
+                                                    candidate.reasons()
+                                            ))
+                                            .toList();
+                                })
+                )
+                .doOnSuccess(results ->
+                        log.info("[VECTOR_SEARCH_DEBUG] resultCount={} topics={}",
+                                results.size(),
+                                results.stream().map(KnowledgeVectorSearchResponse::topic).toList())
+                );
     }
 
     public Flux<KnowledgeBaseResponse> textSearch(String searchText) {
@@ -140,5 +197,17 @@ public class KnowledgeBaseService {
     public Flux<KnowledgeBaseResponse> findAll() {
         return knowledgeBaseRepository.findAll()
                 .map(KnowledgeBaseResponse::from);
+    }
+
+    private List<KnowledgeBase> latestDocuments(List<KnowledgeBase> documents) {
+        return documents.stream()
+                .collect(Collectors.toMap(
+                        KnowledgeBase::getTopic,
+                        Function.identity(),
+                        (a, b) -> a.getVersion() >= b.getVersion() ? a : b
+                ))
+                .values()
+                .stream()
+                .toList();
     }
 }

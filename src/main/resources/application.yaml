@@ -1,4 +1,7 @@
 spring:
+  mvc:
+    async:
+      request-timeout: 10m
   application:
     name: OLCA
   datasource:
@@ -10,6 +13,9 @@ spring:
   h2:
     console:
       enabled: true
+  data:
+    mongodb:
+      auto-index-creation: true
   ai:
     ollama:
       base-url: ${OLLAMA_BASE_URL}
@@ -17,6 +23,7 @@ spring:
         options:
           model: ${OLLAMA_MODEL}
           temperature: 0.3
+          num-predict: 256
       embedding:
           model: nomic-embed-text
 

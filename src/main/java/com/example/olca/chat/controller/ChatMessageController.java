@@ -18,7 +18,9 @@ public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
 
-    // 대화 저장
+    /**
+     * 입력된 대화 저장 요청을 검증한 뒤 메시지로 저장하고 저장 결과를 출력한다.
+     */
     @PostMapping
     public ResponseEntity<ChatMessageResponse> create(
             @Valid @RequestBody ChatMessgeCreateRequset request
@@ -27,7 +29,9 @@ public class ChatMessageController {
         return ResponseEntity.ok(response);
     }
 
-    // ID로 조회
+    /**
+     * 입력된 메시지 ID로 대화를 조회하고 단일 응답으로 출력한다.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ChatMessageResponse> findById(
             @PathVariable Long id
@@ -36,7 +40,9 @@ public class ChatMessageController {
         return ResponseEntity.ok(response);
     }
 
-    // 세션별 대화 목록 조회
+    /**
+     * 입력된 세션 ID로 대화 목록을 조회하고 시간 흐름에 맞는 목록으로 출력한다.
+     */
     @GetMapping("/session/{sessionId}")
     public ResponseEntity<List<ChatMessageResponse>> findBySessionId(
             @PathVariable Long sessionId

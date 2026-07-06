@@ -1,6 +1,103 @@
 # Open-LLM-Coding-Assistant
 
-> 개발자를 위한 AI 코딩 어시스턴트
+> AI 응답을 개발 흐름 안에서 검증 가능하게 다루기 위한 개인 개발 조수
+
+## 왜 만들었나
+
+처음 목표는 거창한 AI 시스템이 아니라, 반복 질문과 토큰 비용을 줄이는 것이었습니다.
+매번 같은 내용을 다시 물어보고, 이미 찾아본 자료를 다시 설명시키는 과정이 비효율적으로 느껴졌습니다.
+
+사용할수록 단순한 비용 절감보다 더 큰 문제가 보였습니다.
+외워야 할 내용과 다시 찾아야 할 자료가 늘어나면서, 개인 지식 베이스와 연결된 개발 보조 도구가 필요해졌습니다.
+
+그 다음에는 답변을 받는 것만으로는 부족했습니다.
+아이디어를 정리하고, 설계를 비교하고, 막힌 지점에서 브레인스토밍을 도와주는 조수가 필요했습니다.
+
+하지만 AI 답변은 자료가 부족할 때도 그럴듯하게 이어질 수 있습니다.
+그래서 OLCA는 단순한 챗봇이 아니라, 질문 라우팅, RAG 검색, 리랭킹, 평가셋, Docker 검증을 통해 답변 흐름을 확인할 수 있는 개발 조수로 확장되었습니다.
+
+## 검증 가능한 AI 개발 조수
+
+OLCA는 AI를 개발자의 작업 흐름 안에서 더 다루기 쉽게 만들기 위한 프로젝트입니다.
+개발자가 AI 응답을 실제 작업에 사용할 때, 그 답변이 어떤 근거와 검증 절차를 거쳤는지 확인할 수 있도록 만든 실험입니다.
+
+LLM은 강력하지만, 질문의 의도나 자료의 유무를 항상 안정적으로 구분하지는 못합니다.
+그래서 OLCA는 질문을 먼저 라우팅하고, 학습형 질문만 RAG 검색으로 연결하며, 검색 결과는 리랭킹과 평가셋으로 검증합니다. 자료가 부족한 경우에는 억지로 답변을 만들기보다, 답변 가능한 범위를 분리하는 방향을 선택했습니다.
+
+이 프로젝트의 목표는 응답을 많이 생성하는 것이 아니라, 개발자가 확인하고 다시 실행해볼 수 있는 답변 흐름을 만드는 것입니다.
+
+## RAG 데이터 확장 후 검색 품질 회복
+
+Java Collections 공식 문서를 추가한 뒤, 기존 RAG 평가셋의 검색 공간이 넓어지면서 top1 정확도가 하락했습니다.
+
+```text
+Collections 추가 직후
+- total=32
+- top1_pass=27/32 (84.4%)
+- top3_pass=28/32 (87.5%)
+```
+
+주요 실패는 `List`, `Set`, `Map` 질문이 디자인패턴 문서로 밀리거나, 알 수 없는 패턴 질문이 Collection 문서와 잘못 연결되는 형태였습니다. 원인은 단순히 문서가 부족한 것이 아니라, 리랭킹 레이어에서 공통 도메인 키워드와 핵심 intent 키워드를 충분히 분리하지 못한 데 있었습니다.
+
+보정 과정에서는 다음을 적용했습니다.
+
+- `UsageIntentScorer`가 디자인패턴 질문에만 사용 시점 문서를 boost하도록 범위를 제한
+- 알 수 없는 패턴 질문이 모든 후보에서 강하게 낮아지도록 guard 확장
+- `JavaCollectionScorer`로 `List`, `Set`, `Map`, `Collection` 질문의 전용 intent 보정 추가
+- Query expansion을 Spring property로 켜고 끌 수 있게 분리
+- 리랭킹에서 `java`, `official`, `oracle` 같은 공통 노이즈 키워드는 제외하고 핵심 intent 키워드만 점수화
+- 언어 차원의 Java interface 질문과 Collections interface 문서가 섞이지 않도록 domain penalty 보정
+
+최종 검증 결과는 다음과 같습니다.
+
+```text
+RAG Evaluation
+- total=32
+- top1_pass=32/32 (100.0%)
+- top3_pass=32/32 (100.0%)
+
+AI Verification Sandbox
+- Run ID: 20260704T165438Z-all
+- Result: pass
+- Exit code: 0
+- Mode: all
+- Script: scripts/dev/verify-all.sh
+- Image: olca-verifier:local
+- Dockerfile: scripts/dev/ai-verification-sandbox.Dockerfile
+- Network: host
+```
+
+검증 증적은 다음 위치에 남습니다.
+
+```text
+verification-runs/20260704T165438Z-all/result.json
+verification-runs/20260704T165438Z-all/stdout.log
+verification-runs/20260704T165438Z-all/stderr.log
+verification-runs/20260704T165438Z-all/docker-build.log
+```
+
+이후 공식 문서 5개를 추가로 적재하면서 검색 공간을 한 번 더 넓혔습니다.
+
+추가한 공식 문서는 다음과 같습니다.
+
+- Java Official - Generics
+- Java Official - Enum Types
+- Java Official - Annotations
+- Java Official - Lambda Expressions
+- Java Official - Stream Aggregate Operations
+
+확장 직후에는 `List<String>` 질문이 List 문서로 밀리고, `filter map collect` 질문이 Map 문서로 밀리는 실패가 발생했습니다.
+이는 문서 내용의 문제가 아니라 `List`, `map`처럼 같은 단어가 제네릭, 컬렉션, 스트림 문맥에서 다르게 쓰이는 경우였습니다.
+
+보정은 새 구조를 크게 만들기보다, Java 언어 기능 전용 scorer를 추가하고 컬렉션 scorer의 적용 조건을 좁히는 방식으로 처리했습니다.
+
+```text
+Official Java docs 확장 후 RAG Evaluation
+- total=47
+- top1_pass=47/47 (100.0%)
+- top3_pass=47/47 (100.0%)
+- verification: scripts/dev/verify-rag.sh pass
+```
 
 ## 📋 프로젝트 개요
 
@@ -144,38 +241,62 @@ Response: { answer, sources }
 
 ## 🚀 개발 로드맵
 
-### Phase 0: 기획 ✅
-- [x] API 명세서
-- [x] ERD 설계
-- [x] 기술 스택 정리
-- [x] 로직 흐름 설계
-- [x] 도메인 기능 명세
-- [x] README 작성
+### Phase 0: 프로젝트 기반 정리 ✅
+- [x] Java/Spring 기반 OLCA 백엔드 구성
+- [x] MySQL/JPA 도메인 초안 구성
+- [x] MongoDB 기반 KnowledgeBase 저장 구조 구성
+- [x] Open-LLM-VTuber 연동 방향 정리
+- [x] Ollama 기반 로컬 LLM/Embedding 흐름 연결
 
-### Phase 1: 구현
-- [x] 도메인 Entity
-- [x] Repository
-- [ ] Service (진행 중)
-- [ ] Controller
-- [ ] DTO
+### Phase 1: 질문 라우팅과 RAG 파이프라인 ✅
+- [x] 대화형/학습형/자료 없음 질문 라우팅
+- [x] 학습형 질문만 RAG 검색으로 연결
+- [x] 자료가 부족한 경우 억지 답변 생성을 막는 guard 구성
+- [x] Query expansion 적용 및 `olca.rag.query-expansion.enabled` 옵션 추가
+- [x] KnowledgeBase vector search API 구성
 
-### Phase 2: 테스트
-- [ ] 단위 테스트
-- [ ] 통합 테스트
-- [ ] Postman 테스트
-- [ ] 리팩토링
+### Phase 2: 리랭킹과 검색 품질 보정 ✅
+- [x] vector similarity 기반 후보 검색
+- [x] keyword/topic/sourceTrust/domainPenalty 기반 reranking
+- [x] 디자인패턴 사용 시점 boost 범위 제한
+- [x] unknown pattern guard 확장
+- [x] Java Collection 전용 scorer 추가
+- [x] 공통 노이즈 키워드와 핵심 intent 키워드 분리
+- [x] Java language interface와 Collections interface 도메인 경계 보정
 
-### Phase 3: 고급
-- [ ] Config
-- [ ] JWT 보안
-- [ ] AOP
-- [ ] 전체 테스트
+### Phase 3: 평가셋과 회귀 검증 ✅
+- [x] `scripts/knowledge/rag_eval_cases.json` 평가셋 구성
+- [x] Java basic, design pattern, unknown, Java collection 케이스 포함
+- [x] `scripts/knowledge/evaluate-rag.py` 평가 스크립트 구성
+- [x] Collections 추가 후 하락한 검색 품질 회복
+- [x] 최종 RAG 평가 `top1_pass=32/32`, `top3_pass=32/32` 확인
 
-### Phase 4: 배포
-- [ ] Docker
-- [ ] EC2 배포
-- [ ] MySQL/MongoDB 연결
-- [ ] 모니터링
+### Phase 4: 자동 검증과 컨테이너 증적 ✅
+- [x] `scripts/dev/verify-rag.sh` 구성
+- [x] `scripts/dev/verify-all.sh` 구성
+- [x] Docker 기반 `verify-in-docker.sh all` 검증
+- [x] `verification-evidence.py assert-pass` 증적 확인
+- [x] 검증 Run ID 기록: `20260704T165438Z-all`
+
+### Phase 5: 공식 문서 확장 학습과 RAG 안정성 검증 ✅
+- [x] Java 공식 문서 5개 추가 적재
+- [x] 평가셋을 32개에서 47개로 확장
+- [x] 확장 직후 top1 실패 케이스 분석
+- [x] `List<String>` 제네릭 문맥과 `List Interface` 문맥 분리
+- [x] Stream `map` 연산과 `Map Interface` 문맥 분리
+- [x] KnowledgeBase metadata 도입 (`sourceType`, `sourceUrl`, `domain`, `category`, `topicKey`)
+- [x] metadata context scorer 추가
+- [x] metadata 도입 후 `collection`/`collect` 부분 문자열 오인 문제 수정
+- [x] 최종 RAG 평가 `top1_pass=47/47`, `top3_pass=47/47` 확인
+
+### 후속 개선 과제
+- [ ] 공식 문서, 개인 노트, 실험용 데이터 분리 정책 강화
+- [ ] 문자열 기반 scorer를 metadata 기반 reranking으로 점진적 전환
+- [ ] Query expansion ON/OFF 결과를 검증 리포트에 함께 기록
+- [ ] 평가셋 확장 시 top1/top3 변화 추적 자동화
+## 추가 트러블슈팅 기록
+
+- [RAG metadata context troubleshooting](docs/troubleshooting/rag-metadata-context.md)
 
 ## 🔗 연동
 
@@ -184,17 +305,15 @@ Response: { answer, sources }
 
 ## 📌 설계 원칙
 
-✅ **빠르고 간단하게 시작**  
-✅ **확장 가능한 구조**  
+✅ **빠르고 간단하게 시작**
+✅ **확장 가능한 구조**
 ✅ **유지보수 쉬운 코드**
 
 ## 🎯 목표
 
 **실사용 가능한 개발자 AI 어시스턴트 (3~4개월)**
 
-## 👨‍💻 개발자
 
-매아
 
 ## 📄 라이선스
 

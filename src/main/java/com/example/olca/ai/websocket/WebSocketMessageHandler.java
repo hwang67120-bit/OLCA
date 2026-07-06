@@ -39,7 +39,9 @@ public class WebSocketMessageHandler {
 
     public void handleMessage(String message, WebSocketClient client) {
         try {
-            // ✅ UTF-8 디코딩
+            /**
+             * 입력된 WebSocket 문자열을 UTF-8 기준으로 복원해 메시지 파싱이 가능하게 한다.
+             */
             String decodedMessage = new String(
                     message.getBytes(StandardCharsets.ISO_8859_1),
                     StandardCharsets.UTF_8
@@ -50,7 +52,9 @@ public class WebSocketMessageHandler {
 
             log.info("📥 수신 타입: {}", type);
 
-            // ✅ audio 메시지: 텍스트 누적
+            /**
+             * audio 타입 응답에서 표시 텍스트만 추출해 최종 출력 문장으로 누적한다.
+             */
             if ("audio".equals(type)) {
                 Map<String, Object> displayText = (Map<String, Object>) response.get("display_text");
                 if (displayText != null) {
@@ -62,7 +66,9 @@ public class WebSocketMessageHandler {
                 }
             }
 
-            // ✅ 완료 신호: 응답 반환 및 종료
+            /**
+             * 완료 신호가 들어오면 누적된 텍스트를 최종 응답으로 출력하고 연결을 종료한다.
+             */
             if ("backend-synth-complete".equals(type)) {
                 String finalResponse = fullResponse.toString().trim();
                 log.info("✅ 전체 응답: {}", finalResponse);
