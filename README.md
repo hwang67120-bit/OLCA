@@ -1,8 +1,8 @@
-﻿# Open-LLM-Coding-Assistant (OLCA)
+# Open-LLM-Coding-Assistant (OLCA)
 
 > AI 응답을 개발 흐름 안에서 검증 가능하게 다루기 위한 Java/Spring 기반 개인 개발 조수
 
-OLCA는 단순히 LLM을 호출하는 챗봇이 아니라, 공식 문서를 지식 베이스에 적재하고 RAG 검색, 리랭킹, 평가셋, 검증용 Docker 샌드박스를 통해 답변 근거와 검색 품질을 확인하는 백엔드 프로젝트입니다.
+OLCA는 단순히 LLM을 호출하는 챗봇이 아니라, 공식 문서를 지식 베이스에 적재하고 RAG 검색, 리랭킹, 평가셋, 배포용 Docker, 검증용 Docker 샌드박스를 통해 답변 근거와 실행 가능성을 확인하는 백엔드 프로젝트입니다.
 
 ## 핵심 결과
 
@@ -150,24 +150,38 @@ Official Java docs 확장 후 RAG Evaluation
 - top3_pass=47/47 (100.0%)
 ```
 
+## 배포용 Docker
+
+OLCA에는 다른 컴퓨터에서 실행 가능성을 높이기 위한 배포/실행용 Docker 구성이 있습니다.
+
+```bash
+docker compose up --build
+```
+
+Compose는 다음 서비스를 함께 실행합니다.
+
+```text
+olca       -> Spring Boot application
+mongo      -> KnowledgeBase 저장소
+ollama     -> local LLM / embedding server
+ollama-init -> 첫 실행 시 필요한 Ollama 모델 pull
+```
+
+첫 실행 시 `ollama-init` 서비스가 `nomic-embed-text`와 기본 채팅 모델을 자동으로 받습니다.
+
+이 구성은 포트폴리오 리뷰와 로컬 재현을 위한 실행 환경입니다. 운영 배포를 위한 secret 관리, HTTPS, MongoDB 인증, CI/CD 배포는 후속 개선 과제로 분리합니다.
+
+자세한 내용은 [Deployment Docker](docs/deployment-docker.md)를 참고합니다.
+
 ## 검증용 Docker 샌드박스
 
-OLCA의 Docker 구성은 배포용 Docker가 아닙니다. Spring Boot 애플리케이션, MongoDB, Ollama를 모두 컨테이너로 묶어 실행하는 배포 구성은 아직 포함하지 않았습니다.
-
-현재 Docker는 이미 실행 중인 OLCA 서버를 대상으로 검증 스크립트를 컨테이너 내부에서 다시 실행하는 검증 재현용 샌드박스입니다. 목적은 내 로컬 셸 환경에만 의존하지 않고, 같은 검증 명령을 별도 컨테이너 환경에서 재확인하는 것입니다.
+배포용 Docker와 별도로, OLCA에는 이미 실행 중인 서버를 대상으로 검증 스크립트를 컨테이너 내부에서 다시 실행하는 검증 재현용 Docker 샌드박스가 있습니다.
 
 ```bash
 bash scripts/dev/verify-in-docker.sh all
 bash scripts/dev/verify-in-docker.sh backend
 bash scripts/dev/verify-in-docker.sh rag
 ```
-
-전제 조건은 다음과 같습니다.
-
-- OLCA 서버가 실행 중이어야 함
-- MongoDB에 평가 대상 지식 문서가 적재되어 있어야 함
-- Ollama embedding 서버가 실행 중이어야 함
-- Docker 컨테이너가 `OLCA_BASE_URL`에 접근 가능해야 함
 
 검증 결과는 `verification-runs/` 아래에 저장됩니다.
 
@@ -185,6 +199,7 @@ verification-runs/latest-run.txt
 
 ## 문서
 
+- [Deployment Docker](docs/deployment-docker.md)
 - [AI Verification Sandbox](docs/ai-verification-sandbox.md)
 - [RAG reranking troubleshooting](docs/troubleshooting/rag-reranking-summary.md)
 - [RAG metadata context troubleshooting](docs/troubleshooting/rag-metadata-context.md)
@@ -239,7 +254,7 @@ verification-runs/latest-run.txt
 - 문자열 기반 scorer를 metadata 기반 reranking으로 점진적 전환
 - Query expansion ON/OFF 결과를 검증 리포트에 함께 기록
 - 평가셋 확장 시 top1/top3 변화 추적 자동화
-- 배포용 Dockerfile 및 docker-compose 구성
+- 운영 배포용 secret, HTTPS, MongoDB 인증, CI/CD 배포 보강
 
 ## 라이선스
 
