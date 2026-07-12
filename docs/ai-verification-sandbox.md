@@ -1,25 +1,34 @@
 ﻿# AI Verification Sandbox
 
-This document describes the first verification-sandbox step.
+OLCA의 Docker 구성은 배포용 Docker가 아니라 검증 재현용 샌드박스입니다.
 
-The sandbox is not a new verifier and does not contain new RAG judgment logic.
-It only runs the existing project verification scripts inside an isolated Docker
-container.
+이 샌드박스는 Spring Boot 애플리케이션, MongoDB, Ollama를 모두 컨테이너로 묶어 실행하지 않습니다. 대신 이미 실행 중인 OLCA 서버를 대상으로 기존 검증 스크립트를 컨테이너 내부에서 다시 실행합니다.
 
-## Goal
+## 목적
 
-- Keep product logic unchanged.
-- Reuse the existing `scripts/dev/verify-all.sh` flow.
-- Reuse existing backend compile checks and RAG eval checks.
-- Return Docker exit code and logs to the caller.
+- 제품 로직은 변경하지 않는다.
+- 기존 검증 스크립트(`verify-backend.sh`, `verify-rag.sh`, `verify-all.sh`)를 재사용한다.
+- 로컬 셸 환경에만 의존하지 않고 컨테이너 환경에서 검증 명령을 다시 실행한다.
+- 실행 결과와 로그를 `verification-runs/`에 남긴다.
 
-## Files
+## 검증 범위
 
-- `scripts/dev/ai-verification-sandbox.Dockerfile`
-- `scripts/dev/verify-in-docker.sh`
-- `scripts/dev/verification-evidence.py`
+```text
+verify-in-docker.sh
+-> Docker image build
+-> selected verify script 실행
+-> stdout/stderr/result.json/summary.txt 저장
+```
 
-## Usage
+모드별 실행 스크립트는 다음과 같습니다.
+
+```text
+all     -> scripts/dev/verify-all.sh
+backend -> scripts/dev/verify-backend.sh
+rag     -> scripts/dev/verify-rag.sh
+```
+
+## 실행 방법
 
 ```bash
 bash scripts/dev/verify-in-docker.sh all
@@ -27,37 +36,34 @@ bash scripts/dev/verify-in-docker.sh backend
 bash scripts/dev/verify-in-docker.sh rag
 ```
 
-After a run, inspect the latest evidence:
+최근 검증 결과는 다음 명령으로 확인합니다.
 
 ```bash
 python3 scripts/dev/verification-evidence.py latest
 python3 scripts/dev/verification-evidence.py assert-pass
 ```
 
-## OLCA API
+## 전제 조건
+
+이 Docker 샌드박스는 독립 실행 배포 환경이 아니므로 다음 전제가 필요합니다.
+
+- OLCA 서버가 실행 중이어야 한다.
+- `OLCA_BASE_URL`로 서버에 접근 가능해야 한다.
+- RAG 검증을 실행하려면 MongoDB에 평가 대상 지식 문서가 적재되어 있어야 한다.
+- embedding을 사용하는 검증에서는 Ollama 서버가 실행 중이어야 한다.
+- 기본 네트워크 모드는 `host`이다.
+
+기본 환경 변수는 다음과 같습니다.
 
 ```bash
-curl -X POST http://localhost:8080/api/verification/sandbox \
-  -H "Content-Type: application/json" \
-  -d '{"mode":"all","repeat":4}'
-```
-
-`repeat` can be `1` to `4`. If any run fails, OLCA stops the sequence and
-returns the evidence collected so far.
-## Flow
-
-```text
-AI or developer requests verification
--> verify-in-docker.sh selects an existing verify script
--> Docker builds/uses olca-verifier:local
--> container mounts the current project at /workspace
--> existing verify script runs inside the container
--> exit code and logs are stored and returned unchanged
+OLCA_BASE_URL=http://localhost:8080
+OLLAMA_BASE_URL=http://localhost:11434
+VERIFY_DOCKER_NETWORK=host
 ```
 
 ## Evidence
 
-Each run writes a folder under `verification-runs/`.
+각 실행은 `verification-runs/` 아래에 증적을 남깁니다.
 
 ```text
 verification-runs/<runId>/
@@ -69,23 +75,51 @@ verification-runs/<runId>/
 verification-runs/latest-run.txt
 ```
 
-Use `summary.txt` for quick human review. Use `result.json` when OLCA or an AI
-tool needs a machine-readable result.
+`summary.txt`는 사람이 빠르게 확인하기 위한 파일이고, `result.json`은 도구나 AI가 검증 결과를 읽기 위한 파일입니다.
 
-An answer should only claim sandbox verification when it can include the run ID,
-script, image, result, and exit code from `summary.txt` or `result.json`.
+검증 성공을 주장할 때는 최소한 다음 정보를 함께 확인해야 합니다.
 
-`verification-evidence.py assert-pass` exists for that policy. It does not
-create new quality rules. It only reads `result.json` and returns success when
-the existing Docker run succeeded with exit code `0`.
+- Run ID
+- mode
+- script
+- image
+- dockerfile
+- result
+- exit code
 
-## Boundaries
+예시:
 
-The sandbox may define runtime tools such as Java, Gradle, Python, bash, curl,
-and git. It must not define new pass/fail rules for RAG quality.
+```text
+Run ID: 20260704T165438Z-all
+Result: pass
+Exit code: 0
+Mode: all
+Script: scripts/dev/verify-all.sh
+Image: olca-verifier:local
+Dockerfile: scripts/dev/ai-verification-sandbox.Dockerfile
+Network: host
+```
 
-Pass/fail remains owned by existing scripts such as:
+## 한계
+
+이 Docker 구성은 배포용이 아닙니다.
+
+포함하지 않는 것:
+
+- Spring Boot 애플리케이션 실행용 Dockerfile
+- MongoDB 컨테이너 구성
+- Ollama 컨테이너 구성
+- 전체 서비스를 한 번에 실행하는 docker-compose.yml
+- 운영 프로필, 볼륨, 헬스체크 구성
+
+배포용 Docker는 후속 개선 과제로 분리합니다.
+
+## 경계
+
+검증 샌드박스는 새로운 품질 규칙을 만들지 않습니다. pass/fail 기준은 기존 검증 스크립트가 소유합니다.
 
 - `scripts/dev/verify-backend.sh`
 - `scripts/dev/verify-rag.sh`
 - `scripts/dev/verify-all.sh`
+
+Docker는 이 스크립트를 다른 실행 환경에서 재현하고, 결과 증적을 남기는 역할만 합니다.
