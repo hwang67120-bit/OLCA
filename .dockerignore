@@ -1,0 +1,12 @@
+.git
+.gradle
+build
+out
+.idea
+.vscode
+verification-runs
+**/__pycache__
+*.pyc
+*.log
+.env
+.DS_Store
